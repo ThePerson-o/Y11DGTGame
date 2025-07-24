@@ -81,4 +81,8 @@ while running:
 
 # Quit
 pygame.quit()
+<<<<<<< Updated upstream
 sys.exit()
+=======
+sys.exit()  
+>>>>>>> Stashed changes
