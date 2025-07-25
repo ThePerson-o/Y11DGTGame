@@ -30,13 +30,6 @@ clock = pygame.time.Clock()
 background_img = pygame.image.load("background.png")
 background_img = pygame.transform.scale(background_img, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
-#player - Riley
-player = pygame.image.load('player.png').convert_alpha()
-player = pygame.transform.scale(player, (100, 100))
-player_pos = pygame.Vector2(90, 400)
-player_rect = player.get_rect(center = player_pos)
-player_vel = 4
-
 # Main loop
 running = True
 while running:
@@ -44,29 +37,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
-    # Player movement - Riley
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] or keys[pygame.K_UP]:
-        player_pos.y -= player_vel
-
-    if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        player_pos.y += player_vel
-
-    if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        player_pos.x -= player_vel
-
-    if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        player_pos.x += player_vel
-
-    # update player rectangle position to player position
-    player_rect.center = player_pos
     
     # Draw background image
     screen.blit(background_img, (0, 0))
-
-    # Draw player
-    screen.blit(player, player_rect)
     
     # Draw map - Alex
     for row_idx, row in enumerate(game_map):  # Loop through each row in the map
