@@ -49,15 +49,20 @@ while running:
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w] or keys[pygame.K_UP]:
         player_pos.y -= player_vel
-
     if keys[pygame.K_s] or keys[pygame.K_DOWN]:
         player_pos.y += player_vel
-
     if keys[pygame.K_a] or keys[pygame.K_LEFT]:
         player_pos.x -= player_vel
-
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         player_pos.x += player_vel
+
+    # Clamp player position so the character cannot walk off the border (inside the outer wall)
+    min_x = TILE_SIZE
+    max_x = (MAP_COLS - 2) * TILE_SIZE
+    min_y = TILE_SIZE
+    max_y = (MAP_ROWS - 2) * TILE_SIZE
+    player_pos.x = max(min_x, min(player_pos.x, max_x))
+    player_pos.y = max(min_y, min(player_pos.y, max_y))
 
     # update player rectangle position to player position
     player_rect.center = player_pos
@@ -68,12 +73,13 @@ while running:
     # Draw player
     screen.blit(player, player_rect)
     
-    # Draw map - Alex
-    for row_idx, row in enumerate(game_map):  # Loop through each row in the map
-        for col_idx, tile in enumerate(row):  # Loop through each column (tile) in the row
-            if tile == 1:  # If the tile is a wall
-                rect = pygame.Rect(col_idx * TILE_SIZE, row_idx * TILE_SIZE, TILE_SIZE, TILE_SIZE)  # Create a rectangle for the wall tile
-                pygame.draw.rect(screen, (100, 100, 100), rect)  # Draw the wall tile as a grey rectangle
+    # Draw map - Alex (no border walls)
+    for row_idx, row in enumerate(game_map):
+        for col_idx, tile in enumerate(row):
+            # Draws map tiles
+            if tile == 1 and row_idx != 0 and row_idx != MAP_ROWS - 1 and col_idx != 0 and col_idx != MAP_COLS - 1:
+                rect = pygame.Rect(col_idx * TILE_SIZE, row_idx * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                pygame.draw.rect(screen, (100, 100, 100), rect)
     
     # Update display
     pygame.display.flip()
