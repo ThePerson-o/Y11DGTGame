@@ -130,7 +130,7 @@ while running:
     player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
     player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
 
-    # update player rectangle position to player position - Alex
+    # update player rectangle position to player position - Riley
     player_rect.center = player_pos
 
     # Update camera to follow player - Alex
