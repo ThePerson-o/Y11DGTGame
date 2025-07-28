@@ -33,7 +33,7 @@ pygame.display.set_caption("Game")
 clock = pygame.time.Clock()
 
 # Load background image - Alex
-background_img = pygame.image.load("background.png").convert()
+background_img = pygame.image.load("background.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
