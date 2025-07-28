@@ -37,9 +37,9 @@ background_img = pygame.image.load("background.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
-player = pygame.image.load('player.png').convert_alpha()
-player = pygame.transform.scale(player, (100, 100))
-player_pos = pygame.Vector2(90, 400)
+player = pygame.image.load('sprites/player.png').convert_alpha()
+player = pygame.transform.scale(player, (80, 80))
+player_pos = pygame.Vector2(100, 550)
 player_rect = player.get_rect(center = player_pos)
 player_vel = 4
 
