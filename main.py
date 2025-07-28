@@ -37,13 +37,6 @@ background_img = pygame.image.load("background.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
-<<<<<<< Updated upstream
-player = pygame.image.load('player.png').convert_alpha()
-player = pygame.transform.scale(player, (100, 100))
-player_pos = pygame.Vector2(90, 400)
-player_rect = player.get_rect(center = player_pos)
-player_vel = 4
-=======
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
 player = pygame.transform.scale(player, (70, 70)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
@@ -54,7 +47,6 @@ player_vel = 4 # player speed
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 2 # set the speed of the projectile
->>>>>>> Stashed changes
 
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
