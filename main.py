@@ -37,11 +37,16 @@ background_img = pygame.image.load("background.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
-player = pygame.image.load('sprites/player.png').convert_alpha()
-player = pygame.transform.scale(player, (80, 80))
-player_pos = pygame.Vector2(100, 550)
-player_rect = player.get_rect(center = player_pos)
-player_vel = 4
+player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
+player = pygame.transform.scale(player, (70, 70)) # set player size
+player_pos = pygame.Vector2(100, 550) # set initial player position
+player_rect = player.get_rect(center = player_pos) # Player rectangle for collisions
+player_vel = 4 # player speed
+
+# projectiles - Riley
+projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
+projectiles = [] # create a list to store information for projectiles (eg position)
+projectile_vel = 2 # set the speed of the projectile
 
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
@@ -115,6 +120,13 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            projectile_rect = projectile_image.get_rect(center = player_pos)
+            mouse_pos = pygame.mouse.get_pos()
+            direction = pygame.Vector2(mouse_pos) - player_pos
+            direction = direction.normalize() * 10 
+            projectiles.append({"rect": projectile_rect, "velocity": direction})
+
     # Player movement - Riley
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w] or keys[pygame.K_UP]:
@@ -130,7 +142,7 @@ while running:
     player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
     player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
 
-    # update player rectangle position to player position - Riley
+    # update player rectangle position to player position - Alex
     player_rect.center = player_pos
 
     # Update camera to follow player - Alex
@@ -147,6 +159,12 @@ while running:
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
+
+    for projectile in projectiles:
+        projectile["rect"].centerx += projectile["velocity"].x
+        projectile["rect"].centery += projectile["velocity"].y
+
+        render_surface.blit(projectile_image, projectile_rect)
 
     # Update display
     pygame.display.flip()
