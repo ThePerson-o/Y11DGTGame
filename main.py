@@ -38,7 +38,7 @@ BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
-player = pygame.transform.scale(player, (70, 70)) # set player size
+pygame.transform.scale(player, (70, 70)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = player.get_rect(center = player_pos) # Player rectangle for collisions
 player_vel = 4 # player speed
@@ -138,9 +138,18 @@ while running:
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         player_pos.x += player_vel
 
-    # Clamp player position to background - Alex
-    player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
-    player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
+    # Clamp player position to background - Riley
+    if player_pos.x <= 30:
+        player_pos.x = 30
+
+    if player_pos.x >= BG_WIDTH - 20:
+        player_pos.x = BG_WIDTH - 20
+
+    if player_pos.y <= 20:
+        player_pos.y = 20
+
+    if player_pos.y >= 880:
+        player_pos.y = 880
 
     # update player rectangle position to player position - Riley
     player_rect.center = player_pos
