@@ -45,6 +45,7 @@ player_vel = 4 # player speed
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
+pygame.transform.scale(projectile_image, (20, 20))
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 2 # set the speed of the projectile
 
@@ -96,6 +97,10 @@ class Camera:
     def apply(self, pos):
         # Convert world pos to camera/screen pos
         return pygame.Vector2(pos.x - self.x, pos.y - self.y)
+    
+    def undo(self, pos):
+        #Convert screen pos to world pos
+        return pygame.Vector2(pos.x + self.x, pos.y + self.y)
 
 # Create camera
 camera = Camera(
@@ -112,6 +117,14 @@ pygame.display.set_caption("Game")
 clock = pygame.time.Clock()
 render_surface = pygame.Surface((camera.width, camera.height))
 
+# Collision rectangles - Riley
+collision_rects = [
+    pygame.Rect(643, 523, 452, 264),
+    pygame.Rect(647, 108, 2, 415),
+    pygame.Rect(1086, 71, 2, 523)
+]
+
+
 # Main loop
 running = True
 while running:
@@ -124,11 +137,12 @@ while running:
             projectile_rect = projectile_image.get_rect(center = player_pos)
             mouse_pos = pygame.mouse.get_pos()
             direction = pygame.Vector2(mouse_pos) - player_pos
-            direction = direction.normalize() * 10 
+            direction = direction.normalize() * 2 
             projectiles.append({"rect": projectile_rect, "velocity": direction})
 
     # Player movement - Riley
-    keys = pygame.key.get_pressed()
+    keys = pygame.key.get_pressed() # Gets all the keys on the keyboard and returns true for the ones being pressed
+    # Checks to see if any movement keys are being pressed and moves the player accordingly
     if keys[pygame.K_w] or keys[pygame.K_UP]:
         player_pos.y -= player_vel
     if keys[pygame.K_s] or keys[pygame.K_DOWN]:
@@ -138,9 +152,22 @@ while running:
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         player_pos.x += player_vel
 
-    # Clamp player position to background - Alex
-    player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
-    player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
+    # Close the game if the player presses escape - Riley
+    if keys[pygame.K_ESCAPE]:
+        exit()
+
+    # Clamp player position to background - Riley
+    if player_pos.x <= 30: # If player goes too far left, stop them
+        player_pos.x = 30
+
+    if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
+        player_pos.x = BG_WIDTH - 20
+
+    if player_pos.y <= 20: # If the player goes too far up, stop them
+        player_pos.y = 20
+
+    if player_pos.y >= 880: # If the player goes too far down, stop them
+        player_pos.y = 880
 
     # update player rectangle position to player position - Alex
     player_rect.center = player_pos
@@ -160,11 +187,15 @@ while running:
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
 
-    for projectile in projectiles:
-        projectile["rect"].centerx += projectile["velocity"].x
-        projectile["rect"].centery += projectile["velocity"].y
+    for proj in projectiles:
+        proj["rect"].centerx += proj["velocity"].x
+        proj["rect"].centery += proj["velocity"].y
+        screen.blit(projectile_image, proj["rect"])
 
-        render_surface.blit(projectile_image, projectile_rect)
+    for rect in collision_rects:
+        pygame.draw.rect(screen, 'red', rect)
+
+    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
