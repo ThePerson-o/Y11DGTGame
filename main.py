@@ -4,9 +4,11 @@ import sys
 # Start pygame
 pygame.init()
 
+
 # Window Settings
-WINDOW_WIDTH = 1200  
-WINDOW_HEIGHT = 900
+info = pygame.display.Info()
+WINDOW_WIDTH = info.current_w - 10
+WINDOW_HEIGHT = info.current_h - 10
 FPS = 60
 
 ZOOM = 1.2  # zoom level 
@@ -27,8 +29,8 @@ for row in range(MAP_ROWS): # Loop every "Map Row"
     else:
         game_map.append([1] + [0] * (MAP_COLS - 2) + [1]) # All other rows are empty (0)
 
-# Create window and render surface BEFORE loading images to reduce gap in performance
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+# Create window BEFORE loading images to reduce gap in performance
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Game")
 clock = pygame.time.Clock()
 
@@ -36,12 +38,19 @@ clock = pygame.time.Clock()
 background_img = pygame.image.load("background.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
+
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
 player = pygame.transform.scale(player, (70, 70)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = player.get_rect(center = player_pos) # Player rectangle for collisions
 player_vel = 4 # player speed
+
+# NPC - Alex
+npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
+npc_img = pygame.transform.scale(npc_img, (70, 70))
+npc_pos = pygame.Vector2(BG_WIDTH // 2, BG_HEIGHT // 2)
+npc_rect = npc_img.get_rect(center=npc_pos)
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
@@ -105,12 +114,11 @@ camera = Camera(
     BG_HEIGHT,
     zoom=ZOOM
 )
-
-# Create window and render surface
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption("Game")
-clock = pygame.time.Clock()
+# Create render surface after camera is created
 render_surface = pygame.Surface((camera.width, camera.height))
+
+# Fullscreen toggle state
+fullscreen = False
 
 # Main loop
 running = True
@@ -119,6 +127,28 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # Fullscreen - Alex
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+            fullscreen = not fullscreen
+            if fullscreen:
+                screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                WINDOW_WIDTH, WINDOW_HEIGHT = screen.get_size()
+            else:
+                info = pygame.display.Info()
+                WINDOW_WIDTH = info.current_w - 10
+                WINDOW_HEIGHT = info.current_h - 10
+                screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
+            camera.width = int(WINDOW_WIDTH / ZOOM)
+            camera.height = int(WINDOW_HEIGHT / ZOOM)
+            render_surface = pygame.Surface((camera.width, camera.height))
+
+        elif event.type == pygame.VIDEORESIZE:
+            WINDOW_WIDTH, WINDOW_HEIGHT = event.w, event.h
+            screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
+            camera.width = int(WINDOW_WIDTH / ZOOM)
+            camera.height = int(WINDOW_HEIGHT / ZOOM)
+            render_surface = pygame.Surface((camera.width, camera.height))
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             projectile_rect = projectile_image.get_rect(center = player_pos)
@@ -142,6 +172,7 @@ while running:
     player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
     player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
 
+
     # update player rectangle position to player position - Alex
     player_rect.center = player_pos
 
@@ -150,6 +181,15 @@ while running:
 
     # Draw everything to render_surface (world coordinates)
     render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+
+
+    # Draw NPC at camera-relative position
+    npc_screen_pos = camera.apply(npc_pos)
+    npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
+    render_surface.blit(npc_img, npc_draw_rect)
+
+    # NPC dialouge
+    npc_dialouge = False
 
     # Draw player at camera-relative position
     player_screen_pos = camera.apply(player_pos)
