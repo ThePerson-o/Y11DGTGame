@@ -4,7 +4,6 @@ import sys
 # Start pygame
 pygame.init()
 
-
 # Window Settings
 info = pygame.display.Info()
 WINDOW_WIDTH = info.current_w - 10
@@ -41,9 +40,10 @@ BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
-player = pygame.transform.scale(player, (70, 70)) # set player size
+player = pygame.transform.scale(player, (60, 60)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
-player_rect = player.get_rect(center = player_pos) # Player rectangle for collisions
+player_rect = pygame.Rect(0, 0, 30, 30) # Player rectangle for collisions
+player_rect.center = player_pos
 player_vel = 4 # player speed
 
 # NPC - Alex
@@ -115,10 +115,71 @@ camera = Camera(
     zoom=ZOOM
 )
 # Create render surface after camera is created
-render_surface = pygame.Surface((camera.width, camera.height))
+render_surface = pygame.Surface(((camera.width, camera.height)), pygame.SRCALPHA)
 
 # Fullscreen toggle state
 fullscreen = False
+
+# List of rectangles for collision - Riley
+collision_rects = [
+    pygame.Rect(553, 530, 357, 217),
+    pygame.Rect(540, 200, 2, 340),
+    pygame.Rect(913, 160, 2, 350),
+    pygame.Rect(913, 150, 335, 2),
+    pygame.Rect(915, 337, 670, 2),
+    pygame.Rect(233, 337, 317, 2),
+    pygame.Rect(715, 430, 42, 2),
+    pygame.Rect(715, 460, 55, 2)
+]
+
+# function for making diagnal collision lines
+def diagnal_line(length, start_x, start_y, x_step, y_step):
+    for i in range(length):
+        rect = pygame.Rect(start_x + i * x_step, start_y + i * y_step, 2, 2)
+        collision_rects.append(rect)
+
+# diagnal collision lines
+diagnal_line(165, 1250, 175, 2, 1)
+diagnal_line(140, 550, 190, -2.2, 1)
+diagnal_line(175, 195, 165, 2, -1)
+diagnal_line(185, 1300, 0, 2, 1)
+
+# function to make collisions for tree type 1
+def draw_tree_type1(tip_x, tip_y):
+    diagnal_line(45, tip_x, tip_y, 1, 1.3)
+    diagnal_line(50, tip_x, tip_y, -1, 1.3)
+    diagnal_line(53, tip_x + 40, tip_y + 55, 1, 4)
+    diagnal_line(34, tip_x - 45, tip_y + 55, -1, 6)
+    diagnal_line(23, tip_x - 80, tip_y + 255, 1, 1)
+    diagnal_line(50, tip_x - 55, tip_y + 275, 1, -0.01)
+    collision_rects.append(pygame.Rect(tip_x, tip_y + 260, 2, 30))
+    collision_rects.append(pygame.Rect(tip_x, tip_y + 290, 30, 2))
+    collision_rects.append(pygame.Rect(tip_x + 30, tip_y + 260, 2, 30))
+    collision_rects.append(pygame.Rect(tip_x + 30, tip_y + 260, 60, 2))
+
+# function to make collisions for tree type 2
+def draw_tree_type2(tip_x, tip_y):
+    diagnal_line(42, tip_x, tip_y, 1.5, 2)
+    diagnal_line(42, tip_x, tip_y, -1.5, 2)
+    diagnal_line(37, tip_x + 60, tip_y + 80, 1, 2)
+    diagnal_line(70, tip_x + 95, tip_y + 155, 0.2, 2)
+    diagnal_line(37, tip_x - 60, tip_y + 80, -1, 2)
+    diagnal_line(70, tip_x - 95, tip_y + 155, -0.2, 2)
+    collision_rects.append(pygame.Rect(tip_x - 110, tip_y + 295, 220, 2))
+    collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 300, 2, 30))
+    collision_rects.append(pygame.Rect(tip_x + 20, tip_y + 300, 2, 30))
+    collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 330, 42, 2))
+
+# tree type 1 collisions
+draw_tree_type1(135, 188)
+draw_tree_type1(1222, 230)
+draw_tree_type1(1040, 183)
+
+# tree type 2 collisions
+draw_tree_type2(380, 146)
+draw_tree_type2(1425, 150)
+draw_tree_type2(1469, 510)
+draw_tree_type2(1785, 460)
 
 # Main loop
 running = True
@@ -158,22 +219,59 @@ while running:
             projectiles.append({"rect": projectile_rect, "velocity": direction})
 
     # Player movement - Riley
-    keys = pygame.key.get_pressed()
+    keys = pygame.key.get_pressed() # Gets all the keys on the keyboard and returns true for the ones being pressed
+    # Checks to see if any movement keys are being pressed and moves the player accordingly
+
+    # Move vertically
+    old_y = player_pos.y
     if keys[pygame.K_w] or keys[pygame.K_UP]:
         player_pos.y -= player_vel
     if keys[pygame.K_s] or keys[pygame.K_DOWN]:
         player_pos.y += player_vel
+
+    player_rect.center = player_pos  # Update rect position
+    # If the player touches a collision rectangle vertically, stop them from moving further
+    for rect in collision_rects:
+        if player_rect.colliderect(rect):
+            player_pos.y = old_y
+            player_rect.center = player_pos
+            break
+
+    # Move horizontally
+    old_x = player_pos.x
     if keys[pygame.K_a] or keys[pygame.K_LEFT]:
         player_pos.x -= player_vel
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         player_pos.x += player_vel
 
-    # Clamp player position to background - Alex
-    player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
-    player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
+    player_rect.center = player_pos  # Update rect position
+    # if the player touches a collision rectangle horizontally, stop them from moving further
+    for rect in collision_rects:
+        if player_rect.colliderect(rect):
+            player_pos.x = old_x
+            player_rect.center = player_pos
+            break
+
+    # Close the game if the player presses escape - Riley
+    if keys[pygame.K_ESCAPE]:
+        exit()
 
 
-    # update player rectangle position to player position - Alex
+    # Clamp player position to background - Riley
+    if player_pos.x <= 30: # If player goes too far left, stop them
+        player_pos.x = 30
+
+    if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
+        player_pos.x = BG_WIDTH - 20
+
+    if player_pos.y <= 20: # If the player goes too far up, stop them
+        player_pos.y = 20
+
+    if player_pos.y >= 880: # If the player goes too far down, stop them
+        player_pos.y = 880
+
+
+    # update player rectangle position to player position - Riley
     player_rect.center = player_pos
 
     # Update camera to follow player - Alex
@@ -195,6 +293,12 @@ while running:
     player_screen_pos = camera.apply(player_pos)
     player_draw_rect = player.get_rect(center=player_screen_pos)
     render_surface.blit(player, player_draw_rect)
+
+    # Draw the collision rectangles in a way that they do move with the camera, but stay fixed to the map
+    for rect in collision_rects:
+        cam_rect = rect.copy()
+        cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
+        pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
