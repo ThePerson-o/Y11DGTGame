@@ -172,7 +172,6 @@ while running:
     player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
     player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
 
-
     # update player rectangle position to player position - Alex
     player_rect.center = player_pos
 
@@ -182,14 +181,19 @@ while running:
     # Draw everything to render_surface (world coordinates)
     render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
-
     # Draw NPC at camera-relative position
     npc_screen_pos = camera.apply(npc_pos)
     npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
     render_surface.blit(npc_img, npc_draw_rect)
 
-    # NPC dialouge
-    npc_dialouge = False
+    # Draw interaction prompt if player is close to NPC (and not in dialogue)
+    if not dialogue_active:
+        distance = player_pos.distance_to(npc_pos)
+        if distance <= interaction_distance:
+            prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
+            prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
+                         npc_screen_pos.y - 50)
+            render_surface.blit(prompt_text, prompt_pos)
 
     # Draw player at camera-relative position
     player_screen_pos = camera.apply(player_pos)
