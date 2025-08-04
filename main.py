@@ -57,6 +57,30 @@ projectile_image = pygame.image.load('sprites/player_projectile.png').convert_al
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 2 # set the speed of the projectile
 
+# NPC Dialogue
+dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
+dialogue_active = False  # Is dialogue currently being shown?
+dialogue_index = 0  # Which line of dialogue are we on?
+interaction_distance = 100  # How close the player needs to be to interact
+
+# Placeholder dialogue for the NPC in a dictionary
+npc_dialogue = [
+    {"speaker": "NPC", "text": "Hello there, traveler! Welcome to our village."}, # Format: "speaker", "text" 
+    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to be prepared."},
+    {"speaker": "NPC", "text": "Take this advice: always watch your back in the dark forest."},
+    {"speaker": "Player", "text": "Thank you for the warning. I'll be careful."},
+    {"speaker": "NPC", "text": "Good luck on your adventure!"}
+]
+
+# Dialogue box settings
+dialogue_box_width = 600
+dialogue_box_height = 150
+dialogue_padding = 20
+dialogue_text_color = (255, 255, 255) # White text colour
+dialogue_box_color = (50, 50, 50) # Dark black box colour
+dialogue_border_color = (200, 200, 200) # Grey for border
+speaker_color = (255, 215, 0)  # Gold for speaker
+
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
 ### pos.x and pos.y are the world coordinates
@@ -120,6 +144,64 @@ render_surface = pygame.Surface((camera.width, camera.height))
 # Fullscreen toggle state
 fullscreen = False
 
+# Function to wrap text for dialogue box
+def wrap_text(text, font, max_width):
+    """Break text into lines that fit within max_width"""
+    words = text.split(' ') # Input text is split into individual words
+    lines = [] # Blank lines list
+    current_line = [] # Blank current lines list
+     
+    for word in words: # For every word that is in the list "words"
+        test_line = ' '.join(current_line + [word]) # Adds the word to the current line
+        text_width = font.size(test_line)[0] # Measures the pixel width of the test_line ## Makes it so that it can dynamically change according to the font size
+        
+        if text_width <= max_width: # if the word is added and it is within the max_width limit
+            current_line.append(word) # Add the word to the line
+        else:
+            if current_line:
+                lines.append(' '.join(current_line)) # Adds the current_line to the lines list
+                current_line = [word] # Current word starts a new line
+            else: 
+                lines.append(word) # If current line is empty, then add word to a new line
+    
+    if current_line:
+        lines.append(' '.join(current_line))
+    
+    return lines
+
+# Function to draw dialogue box
+def draw_dialogue_box(surface, speaker, text):
+    """Draw the dialogue box with speaker name and text"""
+    # Calculate dialogue box position (bottom center of screen)
+    box_x = (surface.get_width() - dialogue_box_width) // 2
+    box_y = surface.get_height() - dialogue_box_height - 50
+    
+    # Draw dialogue box background
+    pygame.draw.rect(surface, dialogue_box_color, 
+                     (box_x, box_y, dialogue_box_width, dialogue_box_height))
+    pygame.draw.rect(surface, dialogue_border_color, 
+                     (box_x, box_y, dialogue_box_width, dialogue_box_height), 3)
+    
+    # Draw speaker name
+    speaker_surface = dialogue_font.render(f"{speaker}:", True, speaker_color)
+    surface.blit(speaker_surface, (box_x + dialogue_padding, box_y + dialogue_padding))
+    
+    # Draw dialogue text (with word wrapping)
+    text_lines = wrap_text(text, dialogue_font, dialogue_box_width - 2 * dialogue_padding)
+    y_offset = dialogue_padding + 30  # Start below speaker name
+    
+    for line in text_lines: # For each line of wrapped text
+        text_surface = dialogue_font.render(line, True, dialogue_text_color) # Renders the current line
+        surface.blit(text_surface, (box_x + dialogue_padding, box_y + y_offset))
+        y_offset += 25
+    
+    # Draw continue indicator
+    indicator_text = "Click to continue..." if dialogue_index < len(npc_dialogue) - 1 else "Click to close" # Detects if its the last line. If not, then display "Click to continue...", if it is display "Click to close"
+    indicator_surface = dialogue_font.render(indicator_text, True, (150, 150, 150))
+    indicator_x = box_x + dialogue_box_width - indicator_surface.get_width() - dialogue_padding
+    indicator_y = box_y + dialogue_box_height - 30
+    surface.blit(indicator_surface, (indicator_x, indicator_y))
+
 # Main loop
 running = True
 while running:
@@ -150,23 +232,54 @@ while running:
             camera.height = int(WINDOW_HEIGHT / ZOOM)
             render_surface = pygame.Surface((camera.width, camera.height))
 
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            projectile_rect = projectile_image.get_rect(center = player_pos)
-            mouse_pos = pygame.mouse.get_pos()
-            direction = pygame.Vector2(mouse_pos) - player_pos
-            direction = direction.normalize() * 10 
-            projectiles.append({"rect": projectile_rect, "velocity": direction})
+        # Handle dialogue interaction
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_e: 
+            if not dialogue_active:
+                # Check if player is close enough to NPC
+                distance = player_pos.distance_to(npc_pos)
+                if distance <= interaction_distance:
+                    dialogue_active = True
+                    dialogue_index = 0
 
-    # Player movement - Riley
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] or keys[pygame.K_UP]:
-        player_pos.y -= player_vel
-    if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        player_pos.y += player_vel
-    if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        player_pos.x -= player_vel
-    if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        player_pos.x += player_vel
+        # Handle mouse clicks for dialogue progression
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if dialogue_active:
+                # Check if click is on dialogue box
+                box_x = (WINDOW_WIDTH - dialogue_box_width) // 2
+                box_y = WINDOW_HEIGHT - dialogue_box_height - 50
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                
+                if (box_x <= mouse_x <= box_x + dialogue_box_width and 
+                    box_y <= mouse_y <= box_y + dialogue_box_height):
+                    dialogue_index += 1
+                    if dialogue_index >= len(npc_dialogue):
+                        dialogue_active = False
+                        dialogue_index = 0
+            else:
+                # Original projectile code
+                projectile_rect = projectile_image.get_rect(center = player_pos)
+                mouse_pos = pygame.mouse.get_pos()
+                # Convert mouse position to world coordinates considering zoom
+                mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
+                mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
+                mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
+                
+                direction = mouse_world_pos - player_pos
+                if direction.length() > 0:
+                    direction = direction.normalize() * 10
+                    projectiles.append({"rect": projectile_rect, "velocity": direction})
+
+    # Player movement - Riley (disabled during dialogue)
+    if not dialogue_active:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            player_pos.y -= player_vel
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            player_pos.y += player_vel
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            player_pos.x -= player_vel
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            player_pos.x += player_vel
 
     # Clamp player position to background - Alex
     player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
@@ -204,11 +317,10 @@ while running:
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
 
-    for projectile in projectiles:
-        projectile["rect"].centerx += projectile["velocity"].x
-        projectile["rect"].centery += projectile["velocity"].y
-
-        render_surface.blit(projectile_image, projectile_rect)
+    # Draw dialogue box on top of everything (if active)
+    if dialogue_active:
+        current_dialogue = npc_dialogue[dialogue_index]
+        draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
 
     # Update display
     pygame.display.flip()
