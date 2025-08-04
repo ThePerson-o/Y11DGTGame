@@ -53,9 +53,10 @@ npc_pos = pygame.Vector2(BG_WIDTH // 2, BG_HEIGHT // 2)
 npc_rect = npc_img.get_rect(center=npc_pos)
 
 # projectiles - Riley
-projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
-projectiles = [] # create a list to store information for projectiles (eg position)
-projectile_vel = 2 # set the speed of the projectile
+projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha()
+pygame.transform.scale(projectile_image, (20, 20))
+projectiles = []
+projectile_vel = 5
 
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
@@ -212,15 +213,21 @@ while running:
             render_surface = pygame.Surface((camera.width, camera.height))
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+            mouse_pos.y -= 77
+            player_screen_pos = camera.apply(player_pos)  # Get the player's position on screen
+            direction = mouse_pos - player_screen_pos
+
+            if direction.length() != 0:
+                direction = direction.normalize() * projectile_vel
+
+            # Create projectile in world space using player's current world position
             projectile_rect = projectile_image.get_rect(center = player_pos)
-            mouse_pos = pygame.mouse.get_pos()
-            direction = pygame.Vector2(mouse_pos) - player_pos
-            direction = direction.normalize() * 10 
-            projectiles.append({"rect": projectile_rect, "velocity": direction})
+            projectiles.append({"rect": projectile_rect, "direction": direction})
 
     # Player movement - Riley
     keys = pygame.key.get_pressed() # Gets all the keys on the keyboard and returns true for the ones being pressed
-    # Checks to see if any movement keys are being pressed and moves the player accordingly
+
 
     # Move vertically
     old_y = player_pos.y
@@ -300,15 +307,27 @@ while running:
         cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
         pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
+    to_remove = []
+    for proj in projectiles:
+        proj["rect"].centerx += proj["direction"].x
+        proj["rect"].centery += proj["direction"].y
+
+        cam_proj = proj.copy()
+        cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+        render_surface.blit(projectile_image, cam_rect.topleft)
+
+        for rect in collision_rects:
+            if rect.colliderect(proj["rect"]):
+                to_remove.append(proj)
+                break
+
+        for proj in to_remove:
+            if proj in projectiles:
+                projectiles.remove(proj)
+
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
-
-    for projectile in projectiles:
-        projectile["rect"].centerx += projectile["velocity"].x
-        projectile["rect"].centery += projectile["velocity"].y
-
-        render_surface.blit(projectile_image, projectile_rect)
 
     # Update display
     pygame.display.flip()
