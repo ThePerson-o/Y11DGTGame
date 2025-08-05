@@ -58,6 +58,20 @@ projectile_image = pygame.transform.scale(projectile_image, (40, 40))
 projectiles = []
 projectile_vel = 5
 
+# enemies - Riley
+enemies = []
+enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
+enemy_image = pygame.transform.scale(enemy_image, (70, 70))
+enemy_vel = 3
+
+def create_enemy(pos_x, pos_y):
+    enemy_rect = pygame.Rect(pos_x, pos_y, 70, 70)
+    enemies.append({"rect": enemy_rect})
+
+create_enemy(70, 80)
+create_enemy(700, 300)
+create_enemy(1750, 80)
+
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
 ### pos.x and pos.y are the world coordinates
@@ -172,14 +186,11 @@ def draw_tree_type2(tip_x, tip_y):
     collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 330, 42, 2))
 
 # tree type 1 collisions
-draw_tree_type1(135, 188)
 draw_tree_type1(1222, 230)
 draw_tree_type1(1040, 183)
 
 # tree type 2 collisions
-draw_tree_type2(380, 146)
 draw_tree_type2(1425, 150)
-draw_tree_type2(1469, 510)
 draw_tree_type2(1785, 460)
 
 # Main loop
@@ -309,29 +320,54 @@ while running:
         pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
     to_remove = []
-    for proj in projectiles:
-        proj["rect"].centerx += proj["direction"].x
-        proj["rect"].centery += proj["direction"].y
+    moving = []
+    deads = []
+    for enemy in enemies:
+        enemy_screen_pos = camera.apply(pygame.Vector2(enemy["rect"].topleft))
+        render_surface.blit(enemy_image, enemy_screen_pos)
 
-        cam_proj = proj.copy()
-        cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
-        render_surface.blit(projectile_image, cam_rect.topleft)
+        enemy_pos = pygame.Vector2(enemy["rect"].center)
+        enemy_direction = player_pos - enemy_pos
+        distance = enemy_direction.length()
 
-        for rect in collision_rects:
-            if rect.colliderect(proj["rect"]):
+        if distance > 1 and distance < 300:
+            if distance > 1:
+                enemy_direction = enemy_direction.normalize() * enemy_vel
+
+            enemy["rect"].x += enemy_direction.x
+            enemy["rect"].y += enemy_direction.y
+
+        for proj in projectiles:
+            if proj["rect"].colliderect(enemy["rect"]):
+                deads.append(enemy)
+
+                if proj in projectiles:
+                    projectiles.remove(proj)
+
+        for dead in deads:
+            if dead in enemies:
+                enemies.remove(dead)
+
+        for proj in projectiles:
+            proj["rect"].centerx += proj["direction"].x
+            proj["rect"].centery += proj["direction"].y
+
+            cam_proj = proj.copy()
+            cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+            render_surface.blit(projectile_image, cam_rect.topleft)
+
+            for rect in collision_rects:
+                if rect.colliderect(proj["rect"]):
+                    to_remove.append(proj)
+                    break
+
+            if proj["rect"].x < 0 or proj["rect"].x > info.current_w - 80 or proj["rect"].y < 0 or proj["rect"].y > info.current_h - 210:
                 to_remove.append(proj)
-                break
 
-        if proj["rect"].x < 0 or proj["rect"].x > info.current_w or proj["rect"].y < 0 or proj["rect"].y > info.current_h:
-<<<<<<< Updated upstream
-            to_remove.append(proj)
-=======
-            to_remove.append(proj["rect"])
->>>>>>> Stashed changes
+            for proj in to_remove:
+                if proj in projectiles:
+                    projectiles.remove(proj)
 
-        for proj in to_remove:
-            if proj in projectiles:
-                projectiles.remove(proj)
 
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
