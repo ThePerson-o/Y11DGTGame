@@ -307,10 +307,11 @@ while running:
 
     # Move vertically
     old_y = player_pos.y
-    if keys[pygame.K_w] or keys[pygame.K_UP]:
-        player_pos.y -= player_vel
-    if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        player_pos.y += player_vel
+    if not dialogue_active:
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            player_pos.y -= player_vel
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            player_pos.y += player_vel
 
     player_rect.center = player_pos  # Update rect position
     # If the player touches a collision rectangle vertically, stop them from moving further
@@ -322,10 +323,11 @@ while running:
 
     # Move horizontally
     old_x = player_pos.x
-    if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        player_pos.x -= player_vel
-    if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        player_pos.x += player_vel
+    if not dialogue_active:
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            player_pos.x -= player_vel
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            player_pos.x += player_vel
 
     player_rect.center = player_pos  # Update rect position
     # if the player touches a collision rectangle horizontally, stop them from moving further
