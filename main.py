@@ -57,6 +57,31 @@ projectile_image = pygame.image.load('sprites/player_projectile.png').convert_al
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 2 # set the speed of the projectile
 
+
+# NPC Dialogue
+dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
+dialogue_active = False  # Is dialogue currently being shown?
+dialogue_index = 0  # Which line of dialogue are we on?
+interaction_distance = 100  # How close the player needs to be to interact
+
+# Placeholder dialogue for the NPC in a dictionary
+npc_dialogue = [
+    {"speaker": "NPC", "text": "Hello there, traveler! Welcome to our village."}, # Format: "speaker", "text" 
+    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to be prepared."},
+    {"speaker": "NPC", "text": "Take this advice: always watch your back in the dark forest."},
+    {"speaker": "Player", "text": "Thank you for the warning. I'll be careful."},
+    {"speaker": "NPC", "text": "Good luck on your adventure!"}
+]
+
+# Dialogue box settings
+dialogue_box_width = 600
+dialogue_box_height = 150
+dialogue_padding = 20
+dialogue_text_color = (255, 255, 255) # White text colour
+dialogue_box_color = (50, 50, 50) # Dark black box colour
+dialogue_border_color = (200, 200, 200) # Grey for border
+speaker_color = (255, 215, 0)  # Gold for speaker
+
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
 ### pos.x and pos.y are the world coordinates
