@@ -294,6 +294,16 @@ while running:
             camera.height = int(WINDOW_HEIGHT / ZOOM)
             render_surface = pygame.Surface((camera.width, camera.height))
 
+        # Handle dialogue interaction
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_e: 
+            if not dialogue_active:
+                # Check if player is close enough to NPC
+                distance = player_pos.distance_to(npc_pos)
+                if distance <= interaction_distance:
+                    dialogue_active = True
+                    dialogue_index = 0
+
+        # Handle mouse clicks for dialogue progression
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if dialogue_active:
                 # Check if click is on dialogue box
@@ -324,6 +334,7 @@ while running:
     # Move vertically
     old_y = player_pos.y
     if not dialogue_active:
+        keys = pygame.key.get_pressed()
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             player_pos.y -= player_vel
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
@@ -371,6 +382,8 @@ while running:
     if player_pos.y >= 880: # If the player goes too far down, stop them
         player_pos.y = 880
 
+    player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
+    player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
 
     # update player rectangle position to player position - Riley
     player_rect.center = player_pos
