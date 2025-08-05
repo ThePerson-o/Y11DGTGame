@@ -145,6 +145,64 @@ render_surface = pygame.Surface(((camera.width, camera.height)), pygame.SRCALPHA
 # Fullscreen toggle state
 fullscreen = False
 
+# Function to wrap text for dialogue box
+def wrap_text(text, font, max_width):
+    """Break text into lines that fit within max_width"""
+    words = text.split(' ') # Input text is split into individual words
+    lines = [] # Blank lines list
+    current_line = [] # Blank current lines list
+     
+    for word in words: # For every word that is in the list "words"
+        test_line = ' '.join(current_line + [word]) # Adds the word to the current line
+        text_width = font.size(test_line)[0] # Measures the pixel width of the test_line ## Makes it so that it can dynamically change according to the font size
+        
+        if text_width <= max_width: # if the word is added and it is within the max_width limit
+            current_line.append(word) # Add the word to the line
+        else:
+            if current_line:
+                lines.append(' '.join(current_line)) # Adds the current_line to the lines list
+                current_line = [word] # Current word starts a new line
+            else: 
+                lines.append(word) # If current line is empty, then add word to a new line
+    
+    if current_line:
+        lines.append(' '.join(current_line))
+    
+    return lines
+
+# Function to draw dialogue box
+def draw_dialogue_box(surface, speaker, text):
+    """Draw the dialogue box with speaker name and text"""
+    # Calculate dialogue box position (bottom center of screen)
+    box_x = (surface.get_width() - dialogue_box_width) // 2
+    box_y = surface.get_height() - dialogue_box_height - 50
+    
+    # Draw dialogue box background
+    pygame.draw.rect(surface, dialogue_box_color, 
+                     (box_x, box_y, dialogue_box_width, dialogue_box_height))
+    pygame.draw.rect(surface, dialogue_border_color, 
+                     (box_x, box_y, dialogue_box_width, dialogue_box_height), 3)
+    
+    # Draw speaker name
+    speaker_surface = dialogue_font.render(f"{speaker}:", True, speaker_color)
+    surface.blit(speaker_surface, (box_x + dialogue_padding, box_y + dialogue_padding))
+    
+    # Draw dialogue text (with word wrapping)
+    text_lines = wrap_text(text, dialogue_font, dialogue_box_width - 2 * dialogue_padding)
+    y_offset = dialogue_padding + 30  # Start below speaker name
+    
+    for line in text_lines: # For each line of wrapped text
+        text_surface = dialogue_font.render(line, True, dialogue_text_color) # Renders the current line
+        surface.blit(text_surface, (box_x + dialogue_padding, box_y + y_offset))
+        y_offset += 25
+    
+    # Draw continue indicator
+    indicator_text = "Click to continue..." if dialogue_index < len(npc_dialogue) - 1 else "Click to close" # Detects if its the last line. If not, then display "Click to continue...", if it is display "Click to close"
+    indicator_surface = dialogue_font.render(indicator_text, True, (150, 150, 150))
+    indicator_x = box_x + dialogue_box_width - indicator_surface.get_width() - dialogue_padding
+    indicator_y = box_y + dialogue_box_height - 30
+    surface.blit(indicator_surface, (indicator_x, indicator_y))
+    
 # List of rectangles for collision - Riley
 collision_rects = [
     pygame.Rect(553, 530, 357, 217),
