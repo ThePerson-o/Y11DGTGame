@@ -54,7 +54,7 @@ npc_rect = npc_img.get_rect(center=npc_pos)
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha()
-pygame.transform.scale(projectile_image, (20, 20))
+projectile_image = pygame.transform.scale(projectile_image, (40, 40))
 projectiles = []
 projectile_vel = 5
 
@@ -214,7 +214,8 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-            mouse_pos.y -= 77
+            mouse_pos.y -= 100
+            mouse_pos.x -= 40
             player_screen_pos = camera.apply(player_pos)  # Get the player's position on screen
             direction = mouse_pos - player_screen_pos
 
@@ -322,7 +323,11 @@ while running:
                 break
 
         if proj["rect"].x < 0 or proj["rect"].x > info.current_w or proj["rect"].y < 0 or proj["rect"].y > info.current_h:
+<<<<<<< Updated upstream
             to_remove.append(proj)
+=======
+            to_remove.append(proj["rect"])
+>>>>>>> Stashed changes
 
         for proj in to_remove:
             if proj in projectiles:
