@@ -4,6 +4,7 @@ import sys
 # Start pygame
 pygame.init()
 
+
 # Window Settings
 info = pygame.display.Info()
 WINDOW_WIDTH = info.current_w - 10
@@ -56,7 +57,6 @@ npc_rect = npc_img.get_rect(center=npc_pos)
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 2 # set the speed of the projectile
-
 
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
@@ -295,15 +295,31 @@ while running:
             render_surface = pygame.Surface((camera.width, camera.height))
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            projectile_rect = projectile_image.get_rect(center = player_pos)
-            mouse_pos = pygame.mouse.get_pos()
-            direction = pygame.Vector2(mouse_pos) - player_pos
-            direction = direction.normalize() * 10 
-            projectiles.append({"rect": projectile_rect, "velocity": direction})
-
-    # Player movement - Riley
-    keys = pygame.key.get_pressed() # Gets all the keys on the keyboard and returns true for the ones being pressed
-    # Checks to see if any movement keys are being pressed and moves the player accordingly
+            if dialogue_active:
+                # Check if click is on dialogue box
+                box_x = (WINDOW_WIDTH - dialogue_box_width) // 2
+                box_y = WINDOW_HEIGHT - dialogue_box_height - 50
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                
+                if (box_x <= mouse_x <= box_x + dialogue_box_width and 
+                    box_y <= mouse_y <= box_y + dialogue_box_height):
+                    dialogue_index += 1
+                    if dialogue_index >= len(npc_dialogue):
+                        dialogue_active = False
+                        dialogue_index = 0
+            else:
+                # Original projectile code
+                projectile_rect = projectile_image.get_rect(center = player_pos)
+                mouse_pos = pygame.mouse.get_pos()
+                # Convert mouse position to world coordinates considering zoom
+                mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
+                mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
+                mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
+                
+                direction = mouse_world_pos - player_pos
+                if direction.length() > 0:
+                    direction = direction.normalize() * 10
+                    projectiles.append({"rect": projectile_rect, "velocity": direction})
 
     # Move vertically
     old_y = player_pos.y
@@ -365,14 +381,19 @@ while running:
     # Draw everything to render_surface (world coordinates)
     render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
-
     # Draw NPC at camera-relative position
     npc_screen_pos = camera.apply(npc_pos)
     npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
     render_surface.blit(npc_img, npc_draw_rect)
 
-    # NPC dialouge
-    npc_dialouge = False
+    # Draw interaction prompt if player is close to NPC (and not in dialogue)
+    if not dialogue_active:
+        distance = player_pos.distance_to(npc_pos)
+        if distance <= interaction_distance:
+            prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
+            prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
+                         npc_screen_pos.y - 50)
+            render_surface.blit(prompt_text, prompt_pos)
 
     # Draw player at camera-relative position
     player_screen_pos = camera.apply(player_pos)
@@ -389,11 +410,10 @@ while running:
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
 
-    for projectile in projectiles:
-        projectile["rect"].centerx += projectile["velocity"].x
-        projectile["rect"].centery += projectile["velocity"].y
-
-        render_surface.blit(projectile_image, projectile_rect)
+    # Draw dialogue box on top of everything (if active)
+    if dialogue_active:
+        current_dialogue = npc_dialogue[dialogue_index]
+        draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
 
     # Update display
     pygame.display.flip()
