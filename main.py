@@ -321,6 +321,9 @@ while running:
                 to_remove.append(proj)
                 break
 
+        if proj["rect"].x < 0 or proj["rect"].x > info.current_w or proj["rect"].y < 0 or proj["rect"].y > info.current_h:
+            to_remove.append(proj)
+
         for proj in to_remove:
             if proj in projectiles:
                 projectiles.remove(proj)
