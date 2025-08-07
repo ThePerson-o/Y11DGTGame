@@ -19,12 +19,16 @@ CAMERA_MARGIN_Y = 80
 # Game Menu 
 game_state = "menu"
 
+# Timer variables
+game_start_time = 0
+timer_font = pygame.font.Font(None, 36)
+
 def draw_menu(): 
     screen.fill((20, 20, 40))  # Dark blue background
     
     # Game title
     title_font = pygame.font.Font(None, 100)
-    title_text = title_font.render("Dark to Light", True, (255, 255, 255))
+    title_text = title_font.render("Adventure Game", True, (255, 255, 255))
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
     screen.blit(title_text, title_rect)
     
@@ -56,7 +60,7 @@ def draw_menu():
     
     # Instructions
     instruction_font = pygame.font.Font(None, 30)
-    instruction_text = instruction_font.render("Click Play to start your game!", True, (200, 200, 200))
+    instruction_text = instruction_font.render("Click Play to start your adventure!", True, (200, 200, 200))
     instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 120))
     screen.blit(instruction_text, instruction_rect)
     
@@ -324,6 +328,7 @@ while running:
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(mouse_pos):
                     game_state = "playing"
+                    game_start_time = pygame.time.get_ticks()  # Record when game started
         
         # Game interactions (only when playing)
         elif game_state == "playing":
@@ -373,7 +378,7 @@ while running:
                             dialogue_active = False
                             dialogue_index = 0
                 else:
-                    # projectile code
+                    # Original projectile code
                     projectile_rect = projectile_image.get_rect(center = player_pos)
                     mouse_pos = pygame.mouse.get_pos()
                     # Convert mouse position to world coordinates considering zoom
@@ -489,6 +494,18 @@ while running:
         if dialogue_active:
             current_dialogue = npc_dialogue[dialogue_index]
             draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
+        
+        # Draw timer on top left (always visible during gameplay)
+        current_time = pygame.time.get_ticks()
+        elapsed_seconds = (current_time - game_start_time) // 1000
+        timer_text = timer_font.render(f"Timer: {elapsed_seconds}s", True, (255, 255, 255))
+        
+        # semi-transparent background for better readability
+        timer_bg = pygame.Surface((timer_text.get_width() + 20, timer_text.get_height() + 10))
+        timer_bg.fill((0, 0, 0))
+        timer_bg.set_alpha(128)  # Semi-transparent
+        screen.blit(timer_bg, (10, 10))
+        screen.blit(timer_text, (20, 15))
 
     # Update display
     pygame.display.flip()
