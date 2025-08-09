@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 
 # Start pygame
 pygame.init()
@@ -9,6 +10,9 @@ info = pygame.display.Info()
 WINDOW_WIDTH = info.current_w - 10
 WINDOW_HEIGHT = info.current_h - 10
 FPS = 60
+
+# Load sounds
+trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
 
 ZOOM = 1.2  # zoom level 
 
@@ -328,6 +332,7 @@ while running:
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(mouse_pos):
                     game_state = "playing"
+                    trumpet.play()
                     game_start_time = pygame.time.get_ticks()  # Record when game started
         
         # Game interactions (only when playing)
