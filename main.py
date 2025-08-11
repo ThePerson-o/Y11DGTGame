@@ -34,7 +34,7 @@ pygame.display.set_caption("Game")
 clock = pygame.time.Clock()
 
 # Load background image - Alex
-background_img = pygame.image.load("background.png").convert_alpha()
+background_img = pygame.image.load("background_full.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 
@@ -137,14 +137,11 @@ fullscreen = False
 
 # List of rectangles for collision - Riley
 collision_rects = [
-    pygame.Rect(553, 530, 357, 217),
-    pygame.Rect(540, 200, 2, 340),
-    pygame.Rect(913, 160, 2, 350),
-    pygame.Rect(913, 150, 335, 2),
-    pygame.Rect(915, 337, 670, 2),
-    pygame.Rect(233, 337, 317, 2),
-    pygame.Rect(715, 430, 42, 2),
-    pygame.Rect(715, 460, 55, 2)
+    pygame.Rect(670, 790, 247, 160),
+    pygame.Rect(670, 575, 8, 215),
+    pygame.Rect(915, 560, 2, 250),
+    pygame.Rect(785, 728, 30, 4),
+    pygame.Rect(777, 762, 53, 2)
 ]
 
 # function for making diagnal collision lines
@@ -153,45 +150,8 @@ def diagnal_line(length, start_x, start_y, x_step, y_step):
         rect = pygame.Rect(start_x + i * x_step, start_y + i * y_step, 2, 2)
         collision_rects.append(rect)
 
-# diagnal collision lines
-diagnal_line(165, 1250, 175, 2, 1)
-diagnal_line(140, 550, 190, -2.2, 1)
-diagnal_line(175, 195, 165, 2, -1)
-diagnal_line(185, 1300, 0, 2, 1)
-
-# function to make collisions for tree type 1
-def draw_tree_type1(tip_x, tip_y):
-    diagnal_line(45, tip_x, tip_y, 1, 1.3)
-    diagnal_line(50, tip_x, tip_y, -1, 1.3)
-    diagnal_line(53, tip_x + 40, tip_y + 55, 1, 4)
-    diagnal_line(34, tip_x - 45, tip_y + 55, -1, 6)
-    diagnal_line(23, tip_x - 80, tip_y + 255, 1, 1)
-    diagnal_line(50, tip_x - 55, tip_y + 275, 1, -0.01)
-    collision_rects.append(pygame.Rect(tip_x, tip_y + 260, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x, tip_y + 290, 30, 2))
-    collision_rects.append(pygame.Rect(tip_x + 30, tip_y + 260, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x + 30, tip_y + 260, 60, 2))
-
-# function to make collisions for tree type 2
-def draw_tree_type2(tip_x, tip_y):
-    diagnal_line(42, tip_x, tip_y, 1.5, 2)
-    diagnal_line(42, tip_x, tip_y, -1.5, 2)
-    diagnal_line(37, tip_x + 60, tip_y + 80, 1, 2)
-    diagnal_line(70, tip_x + 95, tip_y + 155, 0.2, 2)
-    diagnal_line(37, tip_x - 60, tip_y + 80, -1, 2)
-    diagnal_line(70, tip_x - 95, tip_y + 155, -0.2, 2)
-    collision_rects.append(pygame.Rect(tip_x - 110, tip_y + 295, 220, 2))
-    collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 300, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x + 20, tip_y + 300, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 330, 42, 2))
-
-# tree type 1 collisions
-draw_tree_type1(1222, 230)
-draw_tree_type1(1040, 183)
-
-# tree type 2 collisions
-draw_tree_type2(1425, 150)
-draw_tree_type2(1785, 460)
+diagnal_line(10, 777, 762, 1, -3.5)
+diagnal_line(17, 830, 762, -1, -2)
 
 # Main loop
 running = True
@@ -277,17 +237,17 @@ while running:
 
 
     # Clamp player position to background - Riley
-    if player_pos.x <= 30: # If player goes too far left, stop them
-        player_pos.x = 30
+    # if player_pos.x <= 30: # If player goes too far left, stop them
+        # player_pos.x = 30
 
-    if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
-        player_pos.x = BG_WIDTH - 20
+    # if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
+        # player_pos.x = BG_WIDTH - 20
 
-    if player_pos.y <= 20: # If the player goes too far up, stop them
-        player_pos.y = 20
+    # if player_pos.y <= 20: # If the player goes too far up, stop them
+        # player_pos.y = 20
 
-    if player_pos.y >= 880: # If the player goes too far down, stop them
-        player_pos.y = 880
+    # if player_pos.y >= 880: # If the player goes too far down, stop them
+        # player_pos.y = 880
 
 
     # update player rectangle position to player position - Riley
@@ -317,7 +277,7 @@ while running:
     for rect in collision_rects:
         cam_rect = rect.copy()
         cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
-        pygame.draw.rect(render_surface, 'red', cam_rect, -1)
+        pygame.draw.rect(render_surface, 'red', cam_rect, 2)
 
     to_remove = []
     moving = []
@@ -372,6 +332,8 @@ while running:
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
+
+    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
