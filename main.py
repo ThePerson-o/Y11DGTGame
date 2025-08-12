@@ -11,6 +11,8 @@ info = pygame.display.Info()
 WINDOW_WIDTH = info.current_w - 10
 WINDOW_HEIGHT = info.current_h - 10
 FPS = 60
+start_colour = (10 , 10 , 30)
+end_colour = (80, 80, 120)
 
 # Load sounds
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
@@ -32,7 +34,16 @@ timer_border_location = 10
 timer_location = 15
 
 def draw_menu(): 
-    screen.fill((20, 20, 40))  # Dark blue background
+    for y in range(0, WINDOW_HEIGHT, 5):    
+        progress = y / WINDOW_HEIGHT
+        colour_value = (
+            int(start_colour[0] + (end_colour[0] - start_colour[0]) * progress),
+            int(start_colour[1] + (end_colour[1] - start_colour[1]) * progress),
+            int(start_colour[2] + (end_colour[2] - start_colour[2]) * progress)
+        )
+
+        pygame.draw.rect(screen, colour_value, (0, y, WINDOW_WIDTH, 5))
+
     
     # Game title
     title_font = pygame.font.Font(None, 100)
@@ -492,6 +503,7 @@ while running:
                 prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
                              npc_screen_pos.y - 50)
                 render_surface.blit(prompt_text, prompt_pos)
+
 
         # Draw player at camera-relative position
         player_screen_pos = camera.apply(player_pos)
