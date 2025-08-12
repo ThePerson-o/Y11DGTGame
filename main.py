@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import pickle as p 
 
 # Start pygame
 pygame.init()
@@ -20,19 +21,22 @@ ZOOM = 1.2  # zoom level
 CAMERA_MARGIN_X = 120
 CAMERA_MARGIN_Y = 80
 
+
 # Game Menu 
 game_state = "menu"
 
 # Timer variables
 game_start_time = 0
 timer_font = pygame.font.Font(None, 36)
+timer_border_location = 10
+timer_location = 15
 
 def draw_menu(): 
     screen.fill((20, 20, 40))  # Dark blue background
     
     # Game title
     title_font = pygame.font.Font(None, 100)
-    title_text = title_font.render("Adventure Game", True, (255, 255, 255))
+    title_text = title_font.render("Dark to Light", True, (255, 255, 255))
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
     screen.blit(title_text, title_rect)
     
@@ -61,11 +65,11 @@ def draw_menu():
     # Center the text on the button
     text_rect = button_text.get_rect(center=button_rect.center)
     screen.blit(button_text, text_rect)
-    
+
     # Instructions
     instruction_font = pygame.font.Font(None, 30)
     instruction_text = instruction_font.render("Click Play to start your adventure!", True, (200, 200, 200))
-    instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 120))
+    instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
     screen.blit(instruction_text, instruction_rect)
     
     return button_rect
@@ -84,7 +88,7 @@ for row in range(MAP_ROWS): # Loop every "Map Row"
 
 # Create window BEFORE loading images to reduce gap in performance
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("Adventure Game")
+pygame.display.set_caption("Dark to Light")
 clock = pygame.time.Clock()
 
 # Load background image - Alex
@@ -98,6 +102,15 @@ player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 30, 30) # Player rectangle for collisions
 player_rect.center = player_pos
 player_vel = 4 # player speed
+
+
+# Load heart icon
+heart_img = pygame.image.load("heart.png").convert_alpha()
+heart_img = pygame.transform.scale(heart_img, (30,30))
+
+# Player lives - Alex
+player_lives = 3
+health_font = pygame.font.Font(None, 36)
 
 # NPC - Alex
 npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
@@ -439,7 +452,7 @@ while running:
 
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
-            game_state = "menu"  # Return to menu instead of exiting
+            exit() # Return to menu instead of exiting
 
         # Clamp player position to background - Riley
         if player_pos.x <= 30: # If player goes too far left, stop them
@@ -509,8 +522,15 @@ while running:
         timer_bg = pygame.Surface((timer_text.get_width() + 20, timer_text.get_height() + 10))
         timer_bg.fill((0, 0, 0))
         timer_bg.set_alpha(128)  # Semi-transparent
-        screen.blit(timer_bg, (10, 10))
-        screen.blit(timer_text, (20, 15))
+        
+        screen.blit(timer_bg, (10, timer_border_location))
+        screen.blit(timer_text, (20, timer_location))
+
+       # Draw hearts on top left below timer
+        heart_y = timer_location + 40
+        for i in range(player_lives):
+            heart_x = 20 + (i * 35)  # 35 = heart width + spacing
+            screen.blit(heart_img, (heart_x, heart_y))
 
     # Update display
     pygame.display.flip()
