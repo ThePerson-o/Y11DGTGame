@@ -16,6 +16,8 @@ end_colour = (80, 80, 120)
 
 # Load sounds
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
+trumpet.set_volume(0.3)
+water_drip = pygame.mixer.Sound("water_drip.mp3")
 
 ZOOM = 1.2  # zoom level 
 
@@ -33,8 +35,9 @@ timer_font = pygame.font.Font(None, 36)
 timer_border_location = 10
 timer_location = 15
 
+
 def draw_menu(): 
-    for y in range(0, WINDOW_HEIGHT, 5):    
+    for y in range(0, WINDOW_HEIGHT, 2):    
         progress = y / WINDOW_HEIGHT
         colour_value = (
             int(start_colour[0] + (end_colour[0] - start_colour[0]) * progress),
@@ -49,6 +52,11 @@ def draw_menu():
     title_font = pygame.font.Font(None, 100)
     title_text = title_font.render("Dark to Light", True, (255, 255, 255))
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
+    title_center_pos = (WINDOW_WIDTH // 2 , WINDOW_HEIGHT // 2)
+  
+  # Draw shadow first
+    shadow_title = title_font.render("Dark to Light", True, (50, 50, 50))
+    screen.blit(shadow_title, (title_rect.x + 3, title_rect.y + 3))
     screen.blit(title_text, title_rect)
     
     # Play button
@@ -67,7 +75,7 @@ def draw_menu():
     is_hovering = button_rect.collidepoint(mouse_pos)
     
     # Draw button with hover effect
-    button_color = (70, 130, 180) if is_hovering else (50, 50, 100)
+    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
     border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
     
     pygame.draw.rect(screen, button_color, button_rect)
