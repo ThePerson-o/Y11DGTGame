@@ -37,29 +37,29 @@ clock = pygame.time.Clock()
 background_img = pygame.image.load("background_full.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
-
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
-player = pygame.transform.scale(player, (60, 60)) # set player size
+player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
-player_rect = pygame.Rect(0, 0, 30, 30) # Player rectangle for collisions
+player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 4 # player speed
+player_vel = 400 # player speed (pixels per second)
 
 # NPC - Alex
 npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
 npc_img = pygame.transform.scale(npc_img, (70, 70))
-npc_pos = pygame.Vector2(BG_WIDTH // 2, BG_HEIGHT // 2)
+npc_pos = pygame.Vector2(1000, 850)
 npc_rect = npc_img.get_rect(center=npc_pos)
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha()
 projectile_image = pygame.transform.scale(projectile_image, (40, 40))
 projectiles = []
-projectile_vel = 5
+projectile_vel = 700
 
 # enemies - Riley
 enemies = []
+enemy_projectiles = []
 enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (70, 70))
 enemy_vel = 3
@@ -68,9 +68,7 @@ def create_enemy(pos_x, pos_y):
     enemy_rect = pygame.Rect(pos_x, pos_y, 70, 70)
     enemies.append({"rect": enemy_rect})
 
-create_enemy(70, 80)
-create_enemy(700, 300)
-create_enemy(1750, 80)
+create_enemy(178, 222)
 
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
@@ -141,7 +139,23 @@ collision_rects = [
     pygame.Rect(670, 575, 8, 215),
     pygame.Rect(915, 560, 2, 250),
     pygame.Rect(785, 728, 30, 4),
-    pygame.Rect(777, 762, 53, 2)
+    pygame.Rect(777, 762, 53, 2),
+    pygame.Rect(460, 680, 210, 2),
+    pygame.Rect(915, 680, 470, 2),
+    pygame.Rect(915, 545, 200, 2),
+    pygame.Rect(670, 315, 500, 8),
+    pygame.Rect(670, 315, 2, 130),
+    pygame.Rect(1168, 315, 2, 132),
+    pygame.Rect(980, 815, 45, 62),
+    pygame.Rect(40, 1045, 640, 2),
+    pygame.Rect(680, 1045, 2, 250),
+    pygame.Rect(920, 1045, 970, 2),
+    pygame.Rect(920, 1045, 2, 250),
+    pygame.Rect(50, 200, 2, 845),
+    pygame.Rect(50, 200, 1870, 2),
+    pygame.Rect(1920, 200, 2, 750),
+    pygame.Rect(680, 1295, 242, 2),
+    pygame.Rect(1947, 965, 2, 120)
 ]
 
 # function for making diagnal collision lines
@@ -150,8 +164,53 @@ def diagnal_line(length, start_x, start_y, x_step, y_step):
         rect = pygame.Rect(start_x + i * x_step, start_y + i * y_step, 2, 2)
         collision_rects.append(rect)
 
+def draw_tree_type1(x, y):
+    diagnal_line(29, x, y, 1, 1.5)
+    diagnal_line(31, x, y, -1, 1.5)
+    diagnal_line(27, x + 30, y + 45, 1, 5)
+    diagnal_line(28, x - 30, y + 45, -0.5, 5)
+    collision_rects.append(pygame.Rect(x - 42, y + 180, 100, 2))
+    collision_rects.append(pygame.Rect(x, y + 180, 2, 17))
+    collision_rects.append(pygame.Rect(x + 29, y + 180, 2, 17))
+    collision_rects.append(pygame.Rect(x, y + 197, 31, 2))
+
+def draw_tree_type2(x, y):
+    diagnal_line(33, x, y, 1, 1.6)
+    diagnal_line(37, x, y, -1, 1.5)
+    diagnal_line(42, x + 30, y + 45, 1, 3)
+    diagnal_line(42, x - 30, y + 45, -1, 3)
+    diagnal_line(50, x + 20, y + 200, 1, -0.5)
+    diagnal_line(50, x - 20, y + 200, -1, -0.5)
+    collision_rects.append(pygame.Rect(x - 20, y + 200, 2, 18))
+    collision_rects.append(pygame.Rect(x + 20, y + 200, 2, 18))
+    collision_rects.append(pygame.Rect(x - 20, y + 218, 40, 2))
+
+draw_tree_type1(400, 570)
+draw_tree_type1(127, 90)
+draw_tree_type1(460, 120)
+draw_tree_type1(1003, 570)
+draw_tree_type1(1122, 600)
+draw_tree_type1(1425, 85)
+draw_tree_type1(1665, 720)
+draw_tree_type1(1845, 150)
+
+draw_tree_type2(1288, 790)
+draw_tree_type2(1500, 760)
+draw_tree_type2(1258, 545)
+draw_tree_type2(565, 550)
+draw_tree_type2(322, 34)
+draw_tree_type2(1830, 790)
+draw_tree_type2(1560, 153)
+draw_tree_type2(1710, 65)
+
 diagnal_line(10, 777, 762, 1, -3.5)
 diagnal_line(17, 830, 762, -1, -2)
+diagnal_line(53, 670, 575, -4, 2)
+diagnal_line(135, 1115, 545, 2, 1)
+diagnal_line(125, 1170, 450, 2, 1)
+diagnal_line(110, 670, 450, -2, 1)
+diagnal_line(50, 1920, 950, 1, 0.5)
+diagnal_line(60, 1890, 1045, 1, 0.7)
 
 # Main loop
 running = True
@@ -191,22 +250,25 @@ while running:
             direction = mouse_pos - player_screen_pos
 
             if direction.length() != 0:
-                direction = direction.normalize() * projectile_vel
+                speed = projectile_vel
+                direction = direction.normalize()
+                velocity = direction * speed
 
             # Create projectile in world space using player's current world position
             projectile_rect = projectile_image.get_rect(center = player_pos)
-            projectiles.append({"rect": projectile_rect, "direction": direction})
+            projectiles.append({"rect": projectile_rect, "velocity": velocity})
 
     # Player movement - Riley
     keys = pygame.key.get_pressed() # Gets all the keys on the keyboard and returns true for the ones being pressed
+    dt = clock.tick(60) / 1000
 
 
     # Move vertically
     old_y = player_pos.y
     if keys[pygame.K_w] or keys[pygame.K_UP]:
-        player_pos.y -= player_vel
+        player_pos.y -= player_vel * dt
     if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        player_pos.y += player_vel
+        player_pos.y += player_vel * dt
 
     player_rect.center = player_pos  # Update rect position
     # If the player touches a collision rectangle vertically, stop them from moving further
@@ -219,9 +281,9 @@ while running:
     # Move horizontally
     old_x = player_pos.x
     if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        player_pos.x -= player_vel
+        player_pos.x -= player_vel * dt
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        player_pos.x += player_vel
+        player_pos.x += player_vel * dt
 
     player_rect.center = player_pos  # Update rect position
     # if the player touches a collision rectangle horizontally, stop them from moving further
@@ -234,21 +296,6 @@ while running:
     # Close the game if the player presses escape - Riley
     if keys[pygame.K_ESCAPE]:
         exit()
-
-
-    # Clamp player position to background - Riley
-    # if player_pos.x <= 30: # If player goes too far left, stop them
-        # player_pos.x = 30
-
-    # if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
-        # player_pos.x = BG_WIDTH - 20
-
-    # if player_pos.y <= 20: # If the player goes too far up, stop them
-        # player_pos.y = 20
-
-    # if player_pos.y >= 880: # If the player goes too far down, stop them
-        # player_pos.y = 880
-
 
     # update player rectangle position to player position - Riley
     player_rect.center = player_pos
@@ -297,6 +344,17 @@ while running:
             enemy["rect"].x += enemy_direction.x
             enemy["rect"].y += enemy_direction.y
 
+            player_screen_pos = camera.apply(player_pos)
+            proj_directionx = player_screen_pos.x - enemy["rect"].x
+            proj_directiony = player_screen_pos.y - enemy["rect"].y
+            proj_direction = pygame.Vector2(proj_directionx, proj_directiony)
+
+            if proj_direction.length() != 0:
+                proj_direction = proj_direction.normalize() * projectile_vel
+
+            enemy_projectile_rect = projectile_image.get_rect(center = enemy["rect"].center)
+            enemy_projectiles.append({"rect": enemy_projectile_rect, "direction": proj_direction})
+
         for proj in projectiles:
             if proj["rect"].colliderect(enemy["rect"]):
                 deads.append(enemy)
@@ -308,25 +366,22 @@ while running:
             if dead in enemies:
                 enemies.remove(dead)
 
-        for proj in projectiles:
-            proj["rect"].centerx += proj["direction"].x
-            proj["rect"].centery += proj["direction"].y
+    for proj in projectiles:
+        proj["rect"].centerx += proj["velocity"].x * dt
+        proj["rect"].centery += proj["velocity"].y * dt
 
-            cam_proj = proj.copy()
-            cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
-            render_surface.blit(projectile_image, cam_rect.topleft)
+        cam_rect = proj["rect"].copy()
+        cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+        render_surface.blit(projectile_image, cam_rect.topleft)
 
-            for rect in collision_rects:
-                if rect.colliderect(proj["rect"]):
-                    to_remove.append(proj)
-                    break
-
-            if proj["rect"].x < 0 or proj["rect"].x > info.current_w - 80 or proj["rect"].y < 0 or proj["rect"].y > info.current_h - 210:
+        for rect in collision_rects:
+            if rect.colliderect(proj["rect"]):
                 to_remove.append(proj)
+                break
 
-            for proj in to_remove:
-                if proj in projectiles:
-                    projectiles.remove(proj)
+        for proj in to_remove:
+            if proj in projectiles:
+                projectiles.remove(proj)
 
 
     # Scale render_surface to screen for zoom effect
