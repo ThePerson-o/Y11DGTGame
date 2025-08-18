@@ -4,7 +4,6 @@ import sys
 # Start pygame
 pygame.init()
 
-
 # Window Settings
 info = pygame.display.Info()
 WINDOW_WIDTH = info.current_w - 10
@@ -35,22 +34,21 @@ pygame.display.set_caption("Game")
 clock = pygame.time.Clock()
 
 # Load background image - Alex
-background_img = pygame.image.load("background.png").convert_alpha()
+background_img = pygame.image.load("background_full.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
-
 
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
-player = pygame.transform.scale(player, (60, 60)) # set player size
+player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
-player_rect = pygame.Rect(0, 0, 30, 30) # Player rectangle for collisions
+player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 4 # player speed
+player_vel = 400 # player speed (pixels per second)
 
 # NPC - Alex
 npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
 npc_img = pygame.transform.scale(npc_img, (70, 70))
-npc_pos = pygame.Vector2(BG_WIDTH // 2, BG_HEIGHT // 2)
+npc_pos = pygame.Vector2(1000, 850)
 npc_rect = npc_img.get_rect(center=npc_pos)
 
 # projectiles - Riley
@@ -221,48 +219,53 @@ def diagnal_line(length, start_x, start_y, x_step, y_step):
         rect = pygame.Rect(start_x + i * x_step, start_y + i * y_step, 2, 2)
         collision_rects.append(rect)
 
-# diagnal collision lines
-diagnal_line(165, 1250, 175, 2, 1)
-diagnal_line(140, 550, 190, -2.2, 1)
-diagnal_line(175, 195, 165, 2, -1)
-diagnal_line(185, 1300, 0, 2, 1)
+def draw_tree_type1(x, y):
+    diagnal_line(29, x, y, 1, 1.5)
+    diagnal_line(31, x, y, -1, 1.5)
+    diagnal_line(27, x + 30, y + 45, 1, 5)
+    diagnal_line(28, x - 30, y + 45, -0.5, 5)
+    collision_rects.append(pygame.Rect(x - 42, y + 180, 100, 2))
+    collision_rects.append(pygame.Rect(x, y + 180, 2, 17))
+    collision_rects.append(pygame.Rect(x + 29, y + 180, 2, 17))
+    collision_rects.append(pygame.Rect(x, y + 197, 31, 2))
 
-# function to make collisions for tree type 1
-def draw_tree_type1(tip_x, tip_y):
-    diagnal_line(45, tip_x, tip_y, 1, 1.3)
-    diagnal_line(50, tip_x, tip_y, -1, 1.3)
-    diagnal_line(53, tip_x + 40, tip_y + 55, 1, 4)
-    diagnal_line(34, tip_x - 45, tip_y + 55, -1, 6)
-    diagnal_line(23, tip_x - 80, tip_y + 255, 1, 1)
-    diagnal_line(50, tip_x - 55, tip_y + 275, 1, -0.01)
-    collision_rects.append(pygame.Rect(tip_x, tip_y + 260, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x, tip_y + 290, 30, 2))
-    collision_rects.append(pygame.Rect(tip_x + 30, tip_y + 260, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x + 30, tip_y + 260, 60, 2))
+def draw_tree_type2(x, y):
+    diagnal_line(33, x, y, 1, 1.6)
+    diagnal_line(37, x, y, -1, 1.5)
+    diagnal_line(42, x + 30, y + 45, 1, 3)
+    diagnal_line(42, x - 30, y + 45, -1, 3)
+    diagnal_line(50, x + 20, y + 200, 1, -0.5)
+    diagnal_line(50, x - 20, y + 200, -1, -0.5)
+    collision_rects.append(pygame.Rect(x - 20, y + 200, 2, 18))
+    collision_rects.append(pygame.Rect(x + 20, y + 200, 2, 18))
+    collision_rects.append(pygame.Rect(x - 20, y + 218, 40, 2))
 
-# function to make collisions for tree type 2
-def draw_tree_type2(tip_x, tip_y):
-    diagnal_line(42, tip_x, tip_y, 1.5, 2)
-    diagnal_line(42, tip_x, tip_y, -1.5, 2)
-    diagnal_line(37, tip_x + 60, tip_y + 80, 1, 2)
-    diagnal_line(70, tip_x + 95, tip_y + 155, 0.2, 2)
-    diagnal_line(37, tip_x - 60, tip_y + 80, -1, 2)
-    diagnal_line(70, tip_x - 95, tip_y + 155, -0.2, 2)
-    collision_rects.append(pygame.Rect(tip_x - 110, tip_y + 295, 220, 2))
-    collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 300, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x + 20, tip_y + 300, 2, 30))
-    collision_rects.append(pygame.Rect(tip_x - 20, tip_y + 330, 42, 2))
+draw_tree_type1(400, 570)
+draw_tree_type1(127, 90)
+draw_tree_type1(460, 120)
+draw_tree_type1(1003, 570)
+draw_tree_type1(1122, 600)
+draw_tree_type1(1425, 85)
+draw_tree_type1(1665, 720)
+draw_tree_type1(1845, 150)
 
-# tree type 1 collisions
-draw_tree_type1(135, 188)
-draw_tree_type1(1222, 230)
-draw_tree_type1(1040, 183)
+draw_tree_type2(1288, 790)
+draw_tree_type2(1500, 760)
+draw_tree_type2(1258, 545)
+draw_tree_type2(565, 550)
+draw_tree_type2(322, 34)
+draw_tree_type2(1830, 790)
+draw_tree_type2(1560, 153)
+draw_tree_type2(1710, 65)
 
-# tree type 2 collisions
-draw_tree_type2(380, 146)
-draw_tree_type2(1425, 150)
-draw_tree_type2(1469, 510)
-draw_tree_type2(1785, 460)
+diagnal_line(10, 777, 762, 1, -3.5)
+diagnal_line(17, 830, 762, -1, -2)
+diagnal_line(53, 670, 575, -4, 2)
+diagnal_line(135, 1115, 545, 2, 1)
+diagnal_line(125, 1170, 450, 2, 1)
+diagnal_line(110, 670, 450, -2, 1)
+diagnal_line(50, 1920, 950, 1, 0.5)
+diagnal_line(60, 1890, 1045, 1, 0.7)
 
 # Main loop
 running = True
@@ -294,16 +297,6 @@ while running:
             camera.height = int(WINDOW_HEIGHT / ZOOM)
             render_surface = pygame.Surface((camera.width, camera.height))
 
-        # Handle dialogue interaction
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_e: 
-            if not dialogue_active:
-                # Check if player is close enough to NPC
-                distance = player_pos.distance_to(npc_pos)
-                if distance <= interaction_distance:
-                    dialogue_active = True
-                    dialogue_index = 0
-
-        # Handle mouse clicks for dialogue progression
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if dialogue_active:
                 # Check if click is on dialogue box
@@ -368,23 +361,6 @@ while running:
     if keys[pygame.K_ESCAPE]:
         exit()
 
-
-    # Clamp player position to background - Riley
-    if player_pos.x <= 30: # If player goes too far left, stop them
-        player_pos.x = 30
-
-    if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
-        player_pos.x = BG_WIDTH - 20
-
-    if player_pos.y <= 20: # If the player goes too far up, stop them
-        player_pos.y = 20
-
-    if player_pos.y >= 880: # If the player goes too far down, stop them
-        player_pos.y = 880
-
-    player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
-    player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
-
     # update player rectangle position to player position - Riley
     player_rect.center = player_pos
 
@@ -394,19 +370,14 @@ while running:
     # Draw everything to render_surface (world coordinates)
     render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
+
     # Draw NPC at camera-relative position
     npc_screen_pos = camera.apply(npc_pos)
     npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
     render_surface.blit(npc_img, npc_draw_rect)
 
-    # Draw interaction prompt if player is close to NPC (and not in dialogue)
-    if not dialogue_active:
-        distance = player_pos.distance_to(npc_pos)
-        if distance <= interaction_distance:
-            prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
-            prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
-                         npc_screen_pos.y - 50)
-            render_surface.blit(prompt_text, prompt_pos)
+    # NPC dialouge
+    npc_dialouge = False
 
     # Draw player at camera-relative position
     player_screen_pos = camera.apply(player_pos)
@@ -417,16 +388,71 @@ while running:
     for rect in collision_rects:
         cam_rect = rect.copy()
         cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
-        pygame.draw.rect(render_surface, 'red', cam_rect, -1)
+        pygame.draw.rect(render_surface, 'red', cam_rect, 2)
+
+    to_remove = []
+    moving = []
+    deads = []
+    for enemy in enemies:
+        enemy_screen_pos = camera.apply(pygame.Vector2(enemy["rect"].topleft))
+        render_surface.blit(enemy_image, enemy_screen_pos)
+
+        enemy_pos = pygame.Vector2(enemy["rect"].center)
+        enemy_direction = player_pos - enemy_pos
+        distance = enemy_direction.length()
+
+        if distance > 1 and distance < 300:
+            if distance > 1:
+                enemy_direction = enemy_direction.normalize() * enemy_vel
+
+            enemy["rect"].x += enemy_direction.x
+            enemy["rect"].y += enemy_direction.y
+
+            player_screen_pos = camera.apply(player_pos)
+            proj_directionx = player_screen_pos.x - enemy["rect"].x
+            proj_directiony = player_screen_pos.y - enemy["rect"].y
+            proj_direction = pygame.Vector2(proj_directionx, proj_directiony)
+
+            if proj_direction.length() != 0:
+                proj_direction = proj_direction.normalize() * projectile_vel
+
+            enemy_projectile_rect = projectile_image.get_rect(center = enemy["rect"].center)
+            enemy_projectiles.append({"rect": enemy_projectile_rect, "direction": proj_direction})
+
+        for proj in projectiles:
+            if proj["rect"].colliderect(enemy["rect"]):
+                deads.append(enemy)
+
+                if proj in projectiles:
+                    projectiles.remove(proj)
+
+        for dead in deads:
+            if dead in enemies:
+                enemies.remove(dead)
+
+    for proj in projectiles:
+        proj["rect"].centerx += proj["velocity"].x * dt
+        proj["rect"].centery += proj["velocity"].y * dt
+
+        cam_rect = proj["rect"].copy()
+        cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+        render_surface.blit(projectile_image, cam_rect.topleft)
+
+        for rect in collision_rects:
+            if rect.colliderect(proj["rect"]):
+                to_remove.append(proj)
+                break
+
+        for proj in to_remove:
+            if proj in projectiles:
+                projectiles.remove(proj)
+
 
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
 
-    # Draw dialogue box on top of everything (if active)
-    if dialogue_active:
-        current_dialogue = npc_dialogue[dialogue_index]
-        draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
+    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
