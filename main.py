@@ -36,6 +36,11 @@ timer_border_location = 10
 timer_location = 15
 
 
+# Lighting variables
+lighting_enabled = True
+light_sources = []
+darkness_colour = (20,20,40)
+
 def draw_menu(): 
     for y in range(0, WINDOW_HEIGHT, 2):    
         progress = y / WINDOW_HEIGHT
@@ -225,6 +230,7 @@ camera = Camera(
 )
 # Create render surface after camera is created
 render_surface = pygame.Surface(((camera.width, camera.height)), pygame.SRCALPHA)
+darkness_surface = pygame.Surface((camera.width, camera.height))
 
 # Fullscreen toggle state
 fullscreen = False
@@ -498,6 +504,7 @@ while running:
         # Draw everything to render_surface (world coordinates)
         render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
+        
         # Draw NPC at camera-relative position
         npc_screen_pos = camera.apply(npc_pos)
         npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
@@ -517,6 +524,34 @@ while running:
         player_screen_pos = camera.apply(player_pos)
         player_draw_rect = player.get_rect(center=player_screen_pos)
         render_surface.blit(player, player_draw_rect)
+        
+        # Lighting
+        if lighting_enabled:
+            # Fill the game with darkness
+            darkness_surface.fill(darkness_colour)
+
+
+            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
+            max_radius = 250  # The outermost edge of the light
+            step = 2 # How quick the blending is
+
+            for radius in range(max_radius, 0, -step): # for each radius (out of 180 to 0, and how quickly it goes down by)
+                # Calculate brightness for the current ring
+                # Brightness increases, as radius gets smaller
+                normalized_radius = radius / max_radius
+                brightness = int(255 * (1 - normalized_radius**1.2))
+
+                # Ensure brightness stays within the valid range of 0 and 255
+                brightness = max(0, min(255, brightness))
+
+                # RBG of the light
+                light_color = (brightness, brightness, brightness)
+
+                # Draw the circle for this ring of light onto our light map.
+                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
+
+
+            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
         # Draw the collision rectangles in a way that they do move with the camera, but stay fixed to the map
         for rect in collision_rects:
