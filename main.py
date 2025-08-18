@@ -56,6 +56,12 @@ projectile_image = pygame.image.load('sprites/player_projectile.png').convert_al
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 2 # set the speed of the projectile
 
+enemies = []
+enemy_projectiles = []
+enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
+enemy_image = pygame.transform.scale(enemy_image, (70, 70))
+enemy_vel = 300
+
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
 dialogue_active = False  # Is dialogue currently being shown?
