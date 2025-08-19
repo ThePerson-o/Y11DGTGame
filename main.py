@@ -125,7 +125,7 @@ player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 4 # player speed
+player_vel = 300 # player speed
 
 
 # Load heart icon
@@ -463,6 +463,16 @@ while running:
                     if direction.length() > 0:
                         direction = direction.normalize() * 10
                         projectiles.append({"rect": projectile_rect, "velocity": direction})
+
+    dt = clock.tick(60) / 1000
+    # Move vertically
+    old_y = player_pos.y
+    if not dialogue_active:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            player_pos.y -= player_vel * dt
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            player_pos.y += player_vel * dt
 
     # Handle different game states
     if game_state == "menu":
