@@ -62,6 +62,12 @@ enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (70, 70))
 enemy_vel = 300
 
+def create_enemy(pos_x, pos_y):
+    enemy_rect = pygame.Rect(pos_x, pos_y, 70, 70)
+    enemies.append({"rect": enemy_rect})
+
+create_enemy(178, 222)
+
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
 dialogue_active = False  # Is dialogue currently being shown?
@@ -440,8 +446,8 @@ while running:
             if distance > 1:
                 enemy_direction = enemy_direction.normalize() * enemy_vel
 
-            enemy["rect"].x += enemy_direction.x
-            enemy["rect"].y += enemy_direction.y
+            enemy["rect"].x += enemy_direction.x * dt
+            enemy["rect"].y += enemy_direction.y * dt
 
             player_screen_pos = camera.apply(player_pos)
             proj_directionx = player_screen_pos.x - enemy["rect"].x
