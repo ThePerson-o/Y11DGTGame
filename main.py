@@ -209,14 +209,27 @@ def draw_dialogue_box(surface, speaker, text):
     
 # List of rectangles for collision - Riley
 collision_rects = [
-    pygame.Rect(553, 530, 357, 217),
-    pygame.Rect(540, 200, 2, 340),
-    pygame.Rect(913, 160, 2, 350),
-    pygame.Rect(913, 150, 335, 2),
-    pygame.Rect(915, 337, 670, 2),
-    pygame.Rect(233, 337, 317, 2),
-    pygame.Rect(715, 430, 42, 2),
-    pygame.Rect(715, 460, 55, 2)
+    pygame.Rect(670, 790, 247, 160),
+    pygame.Rect(670, 575, 8, 215),
+    pygame.Rect(915, 560, 2, 250),
+    pygame.Rect(785, 728, 30, 4),
+    pygame.Rect(777, 762, 53, 2),
+    pygame.Rect(460, 680, 210, 2),
+    pygame.Rect(915, 680, 470, 2),
+    pygame.Rect(915, 545, 200, 2),
+    pygame.Rect(670, 315, 500, 8),
+    pygame.Rect(670, 315, 2, 130),
+    pygame.Rect(1168, 315, 2, 132),
+    pygame.Rect(980, 815, 45, 62),
+    pygame.Rect(40, 1045, 640, 2),
+    pygame.Rect(680, 1045, 2, 250),
+    pygame.Rect(920, 1045, 970, 2),
+    pygame.Rect(920, 1045, 2, 250),
+    pygame.Rect(50, 200, 2, 845),
+    pygame.Rect(50, 200, 1870, 2),
+    pygame.Rect(1920, 200, 2, 750),
+    pygame.Rect(680, 1295, 242, 2),
+    pygame.Rect(1947, 965, 2, 120)
 ]
 
 # function for making diagnal collision lines
