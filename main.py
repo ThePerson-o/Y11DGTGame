@@ -41,18 +41,29 @@ lighting_enabled = True
 light_sources = []
 darkness_colour = (20,20,40)
 
-def draw_menu(): 
-    for y in range(0, WINDOW_HEIGHT, 2):    
-        progress = y / WINDOW_HEIGHT
+def create_menu_background(w, h):
+    surf = pygame.Surface((w, h))  # now safe: screen already exists
+    for y in range(h):
+        t = y / h
         colour_value = (
-            int(start_colour[0] + (end_colour[0] - start_colour[0]) * progress),
-            int(start_colour[1] + (end_colour[1] - start_colour[1]) * progress),
-            int(start_colour[2] + (end_colour[2] - start_colour[2]) * progress)
+            int(start_colour[0] + (end_colour[0] - start_colour[0]) * t),
+            int(start_colour[1] + (end_colour[1] - start_colour[1]) * t),
+            int(start_colour[2] + (end_colour[2] - start_colour[2]) * t)
         )
+        pygame.draw.line(surf, colour_value, (0, y), (w, y))
+    return surf
+menu_background = create_menu_background(WINDOW_WIDTH, WINDOW_HEIGHT)
 
-        pygame.draw.rect(screen, colour_value, (0, y, WINDOW_WIDTH, 5))
 
+def draw_menu(): 
+    global menu_background
     
+    # Rebuild if window size changed
+    if (menu_background.get_width(), menu_background.get_height()) != (WINDOW_WIDTH, WINDOW_HEIGHT):
+        menu_background = create_menu_background(WINDOW_WIDTH, WINDOW_HEIGHT)
+
+    screen.blit(menu_background, (0, 0))
+
     # Game title
     title_font = pygame.font.Font(None, 100)
     title_text = title_font.render("Dark to Light", True, (255, 255, 255))
