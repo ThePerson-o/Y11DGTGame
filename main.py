@@ -157,7 +157,6 @@ def create_enemy(pos_x, pos_y):
     enemy_rect = pygame.Rect(pos_x, pos_y, 70, 70)
     enemies.append({"rect": enemy_rect})
 
-create_enemy(178, 222)
 
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
@@ -482,14 +481,6 @@ while running:
     elif game_state == "playing":
         # Game logic (only run when playing)
         keys = pygame.key.get_pressed()
-        
-        # Move vertically
-        old_y = player_pos.y
-        if not dialogue_active:
-            if keys[pygame.K_w] or keys[pygame.K_UP]:
-                player_pos.y -= player_vel
-            if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-                player_pos.y += player_vel
 
         player_rect.center = player_pos  # Update rect position
         # If the player touches a collision rectangle vertically, stop them from moving further
@@ -518,22 +509,6 @@ while running:
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
             exit() # Return to menu instead of exiting
-
-        # Clamp player position to background - Riley
-        if player_pos.x <= 30: # If player goes too far left, stop them
-            player_pos.x = 30
-
-        if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
-            player_pos.x = BG_WIDTH - 20
-
-        if player_pos.y <= 20: # If the player goes too far up, stop them
-            player_pos.y = 20
-
-        if player_pos.y >= 880: # If the player goes too far down, stop them
-            player_pos.y = 880
-
-        player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
-        player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
 
         # update player rectangle position to player position - Riley
         player_rect.center = player_pos
@@ -578,7 +553,7 @@ while running:
             for radius in range(max_radius, 0, -step): # for each radius (out of 180 to 0, and how quickly it goes down by)
                 # Calculate brightness for the current ring
                 # Brightness increases, as radius gets smaller
-                light_intensity = 2
+                light_intensity = 3
                 normalized_radius = radius / max_radius
                 brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
 
@@ -599,7 +574,7 @@ while running:
     for rect in collision_rects:
         cam_rect = rect.copy()
         cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
-        pygame.draw.rect(render_surface, 'red', cam_rect, 2)
+        pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
     to_remove = []
     moving = []
