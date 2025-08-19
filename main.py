@@ -43,7 +43,7 @@ player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 4 # player speed (pixels per second)
+player_vel = 300 # player speed (pixels per second)
 
 # NPC - Alex
 npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
@@ -352,14 +352,15 @@ while running:
                     direction = direction.normalize() * 10
                     projectiles.append({"rect": projectile_rect, "velocity": direction})
 
+    dt = clock.tick(60) / 1000
     # Move vertically
     old_y = player_pos.y
     if not dialogue_active:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w] or keys[pygame.K_UP]:
-            player_pos.y -= player_vel
+            player_pos.y -= player_vel * dt
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            player_pos.y += player_vel
+            player_pos.y += player_vel * dt
 
     player_rect.center = player_pos  # Update rect position
     # If the player touches a collision rectangle vertically, stop them from moving further
@@ -373,9 +374,9 @@ while running:
     old_x = player_pos.x
     if not dialogue_active:
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            player_pos.x -= player_vel
+            player_pos.x -= player_vel * dt
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            player_pos.x += player_vel
+            player_pos.x += player_vel * dt
 
     player_rect.center = player_pos  # Update rect position
     # if the player touches a collision rectangle horizontally, stop them from moving further
