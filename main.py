@@ -538,10 +538,12 @@ while running:
             for radius in range(max_radius, 0, -step): # for each radius (out of 180 to 0, and how quickly it goes down by)
                 # Calculate brightness for the current ring
                 # Brightness increases, as radius gets smaller
+                light_intensity = 2
                 normalized_radius = radius / max_radius
-                brightness = int(255 * (1 - normalized_radius**1.2))
+                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
 
                 # Ensure brightness stays within the valid range of 0 and 255
+                
                 brightness = max(0, min(255, brightness))
 
                 # RBG of the light
