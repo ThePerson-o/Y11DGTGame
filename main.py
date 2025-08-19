@@ -43,7 +43,7 @@ player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 400 # player speed (pixels per second)
+player_vel = 4 # player speed (pixels per second)
 
 # NPC - Alex
 npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
@@ -303,6 +303,15 @@ while running:
             camera.height = int(WINDOW_HEIGHT / ZOOM)
             render_surface = pygame.Surface((camera.width, camera.height))
 
+        # Handle dialogue interaction
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+            if not dialogue_active:
+                # Check if player is close enough to NPC
+                distance = player_pos.distance_to(npc_pos)
+                if distance <= interaction_distance:
+                    dialogue_active = True
+                    dialogue_index = 0
+
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if dialogue_active:
                 # Check if click is on dialogue box
@@ -382,8 +391,14 @@ while running:
     npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
     render_surface.blit(npc_img, npc_draw_rect)
 
-    # NPC dialouge
-    npc_dialouge = False
+    # Draw interaction prompt if player is close to NPC (and not in dialogue)
+    if not dialogue_active:
+        distance = player_pos.distance_to(npc_pos)
+        if distance <= interaction_distance:
+            prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
+            prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2,
+                        npc_screen_pos.y - 50)
+            render_surface.blit(prompt_text, prompt_pos)
 
     # Draw player at camera-relative position
     player_screen_pos = camera.apply(player_pos)
@@ -457,6 +472,12 @@ while running:
     # Scale render_surface to screen for zoom effect
     scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
     screen.blit(scaled_surface, (0, 0))
+
+    
+# Draw dialogue box on top of everything (if active)
+    if dialogue_active:
+        current_dialogue = npc_dialogue[dialogue_index]
+        draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
 
     print(pygame.mouse.get_pos())
 
