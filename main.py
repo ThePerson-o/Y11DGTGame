@@ -1,5 +1,7 @@
 import pygame
 import sys
+import os
+import pickle as p 
 
 # Start pygame
 pygame.init()
@@ -9,12 +11,92 @@ info = pygame.display.Info()
 WINDOW_WIDTH = info.current_w - 10
 WINDOW_HEIGHT = info.current_h - 10
 FPS = 60
+start_colour = (10 , 10 , 30)
+end_colour = (80, 80, 120)
+
+# Load sounds
+trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
+trumpet.set_volume(0.3)
+water_drip = pygame.mixer.Sound("water_drip.mp3")
 
 ZOOM = 1.2  # zoom level 
 
 # Camera dead zone - Alex
 CAMERA_MARGIN_X = 120
 CAMERA_MARGIN_Y = 80
+
+
+# Game Menu 
+game_state = "menu"
+
+# Timer variables
+game_start_time = 0
+timer_font = pygame.font.Font(None, 36)
+timer_border_location = 10
+timer_location = 15
+
+
+# Lighting variables
+lighting_enabled = True
+light_sources = []
+darkness_colour = (20,20,40)
+
+def draw_menu(): 
+    for y in range(0, WINDOW_HEIGHT, 2):    
+        progress = y / WINDOW_HEIGHT
+        colour_value = (
+            int(start_colour[0] + (end_colour[0] - start_colour[0]) * progress),
+            int(start_colour[1] + (end_colour[1] - start_colour[1]) * progress),
+            int(start_colour[2] + (end_colour[2] - start_colour[2]) * progress)
+        )
+
+        pygame.draw.rect(screen, colour_value, (0, y, WINDOW_WIDTH, 5))
+
+    
+    # Game title
+    title_font = pygame.font.Font(None, 100)
+    title_text = title_font.render("Dark to Light", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
+    title_center_pos = (WINDOW_WIDTH // 2 , WINDOW_HEIGHT // 2)
+  
+  # Draw shadow first
+    shadow_title = title_font.render("Dark to Light", True, (50, 50, 50))
+    screen.blit(shadow_title, (title_rect.x + 3, title_rect.y + 3))
+    screen.blit(title_text, title_rect)
+    
+    # Play button
+    button_font = pygame.font.Font(None, 60)
+    button_text = button_font.render("Play", True, (255, 255, 255))
+    
+    # Button rectangle
+    button_width = 200
+    button_height = 80
+    button_x = (WINDOW_WIDTH - button_width) // 2
+    button_y = WINDOW_HEIGHT // 2
+    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    
+    # Check if mouse is hovering over button
+    mouse_pos = pygame.mouse.get_pos()
+    is_hovering = button_rect.collidepoint(mouse_pos)
+    
+    # Draw button with hover effect
+    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
+    border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
+    
+    pygame.draw.rect(screen, button_color, button_rect)
+    pygame.draw.rect(screen, border_color, button_rect, 3)
+    
+    # Center the text on the button
+    text_rect = button_text.get_rect(center=button_rect.center)
+    screen.blit(button_text, text_rect)
+
+    # Instructions
+    instruction_font = pygame.font.Font(None, 30)
+    instruction_text = instruction_font.render("Click Play to start your adventure!", True, (200, 200, 200))
+    instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
+    screen.blit(instruction_text, instruction_rect)
+    
+    return button_rect
 
 # Map settings - Alex
 TILE_SIZE = 40 # Sets the size of each tile
@@ -30,7 +112,7 @@ for row in range(MAP_ROWS): # Loop every "Map Row"
 
 # Create window BEFORE loading images to reduce gap in performance
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("Game")
+pygame.display.set_caption("Dark to Light")
 clock = pygame.time.Clock()
 
 # Load background image - Alex
@@ -43,7 +125,16 @@ player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 300 # player speed (pixels per second)
+player_vel = 4 # player speed
+
+
+# Load heart icon
+heart_img = pygame.image.load("heart.png").convert_alpha()
+heart_img = pygame.transform.scale(heart_img, (30,30))
+
+# Player lives - Alex
+player_lives = 3
+health_font = pygame.font.Font(None, 36)
 
 # NPC - Alex
 npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
@@ -151,6 +242,7 @@ camera = Camera(
 )
 # Create render surface after camera is created
 render_surface = pygame.Surface(((camera.width, camera.height)), pygame.SRCALPHA)
+darkness_surface = pygame.Surface((camera.width, camera.height))
 
 # Fullscreen toggle state
 fullscreen = False
@@ -300,81 +392,102 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        # Fullscreen - Alex
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
-            fullscreen = not fullscreen
-            if fullscreen:
-                screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                WINDOW_WIDTH, WINDOW_HEIGHT = screen.get_size()
-            else:
-                info = pygame.display.Info()
-                WINDOW_WIDTH = info.current_w - 10
-                WINDOW_HEIGHT = info.current_h - 10
-                screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
-            camera.width = int(WINDOW_WIDTH / ZOOM)
-            camera.height = int(WINDOW_HEIGHT / ZOOM)
-            render_surface = pygame.Surface((camera.width, camera.height))
-
-        elif event.type == pygame.VIDEORESIZE:
-            WINDOW_WIDTH, WINDOW_HEIGHT = event.w, event.h
-            screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
-            camera.width = int(WINDOW_WIDTH / ZOOM)
-            camera.height = int(WINDOW_HEIGHT / ZOOM)
-            render_surface = pygame.Surface((camera.width, camera.height))
-
-        # Handle dialogue interaction
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-            if not dialogue_active:
-                # Check if player is close enough to NPC
-                distance = player_pos.distance_to(npc_pos)
-                if distance <= interaction_distance:
-                    dialogue_active = True
-                    dialogue_index = 0
-
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if dialogue_active:
-                # Check if click is on dialogue box
-                box_x = (WINDOW_WIDTH - dialogue_box_width) // 2
-                box_y = WINDOW_HEIGHT - dialogue_box_height - 50
-                mouse_x, mouse_y = pygame.mouse.get_pos()
-                
-                if (box_x <= mouse_x <= box_x + dialogue_box_width and 
-                    box_y <= mouse_y <= box_y + dialogue_box_height):
-                    dialogue_index += 1
-                    if dialogue_index >= len(npc_dialogue):
-                        dialogue_active = False
-                        dialogue_index = 0
-            else:
-                # Original projectile code
-                projectile_rect = projectile_image.get_rect(center = player_pos)
+        # Menu interactions
+        if game_state == "menu":
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Get the play button rect from draw_menu
+                play_button = draw_menu()  # This will be called again below, but we need the rect
                 mouse_pos = pygame.mouse.get_pos()
-                # Convert mouse position to world coordinates considering zoom
-                mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
-                mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
-                mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
-                
-                direction = mouse_world_pos - player_pos
-                if direction.length() > 0:
-                    direction = direction.normalize() * 10
-                    projectiles.append({"rect": projectile_rect, "velocity": direction})
+                if play_button.collidepoint(mouse_pos):
+                    game_state = "playing"
+                    trumpet.play()
+                    game_start_time = pygame.time.get_ticks()  # Record when game started
+        
+        # Game interactions (only when playing)
+        elif game_state == "playing":
+            # Fullscreen - Alex
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                fullscreen = not fullscreen
+                if fullscreen:
+                    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    WINDOW_WIDTH, WINDOW_HEIGHT = screen.get_size()
+                else:
+                    info = pygame.display.Info()
+                    WINDOW_WIDTH = info.current_w - 10
+                    WINDOW_HEIGHT = info.current_h - 10
+                    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
+                camera.width = int(WINDOW_WIDTH / ZOOM)
+                camera.height = int(WINDOW_HEIGHT / ZOOM)
+                render_surface = pygame.Surface((camera.width, camera.height))
 
-    dt = clock.tick(60) / 1000
-    # Move vertically
-    old_y = player_pos.y
-    if not dialogue_active:
+            elif event.type == pygame.VIDEORESIZE:
+                WINDOW_WIDTH, WINDOW_HEIGHT = event.w, event.h
+                screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
+                camera.width = int(WINDOW_WIDTH / ZOOM)
+                camera.height = int(WINDOW_HEIGHT / ZOOM)
+                render_surface = pygame.Surface((camera.width, camera.height))
+
+            # Handle dialogue interaction
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_e: 
+                if not dialogue_active:
+                    # Check if player is close enough to NPC
+                    distance = player_pos.distance_to(npc_pos)
+                    if distance <= interaction_distance:
+                        dialogue_active = True
+                        dialogue_index = 0
+
+            # Handle mouse clicks for dialogue progression
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if dialogue_active:
+                    # Check if click is on dialogue box
+                    box_x = (WINDOW_WIDTH - dialogue_box_width) // 2
+                    box_y = WINDOW_HEIGHT - dialogue_box_height - 50
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    
+                    if (box_x <= mouse_x <= box_x + dialogue_box_width and 
+                        box_y <= mouse_y <= box_y + dialogue_box_height):
+                        dialogue_index += 1
+                        if dialogue_index >= len(npc_dialogue):
+                            dialogue_active = False
+                            dialogue_index = 0
+                else:
+                    # Original projectile code
+                    projectile_rect = projectile_image.get_rect(center = player_pos)
+                    mouse_pos = pygame.mouse.get_pos()
+                    # Convert mouse position to world coordinates considering zoom
+                    mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
+                    mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
+                    mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
+                    
+                    direction = mouse_world_pos - player_pos
+                    if direction.length() > 0:
+                        direction = direction.normalize() * 10
+                        projectiles.append({"rect": projectile_rect, "velocity": direction})
+
+    # Handle different game states
+    if game_state == "menu":
+        # Draw the menu
+        draw_menu()
+        
+    elif game_state == "playing":
+        # Game logic (only run when playing)
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w] or keys[pygame.K_UP]:
-            player_pos.y -= player_vel * dt
-        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            player_pos.y += player_vel * dt
+        
+        # Move vertically
+        old_y = player_pos.y
+        if not dialogue_active:
+            if keys[pygame.K_w] or keys[pygame.K_UP]:
+                player_pos.y -= player_vel
+            if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+                player_pos.y += player_vel
 
-    player_rect.center = player_pos  # Update rect position
-    # If the player touches a collision rectangle vertically, stop them from moving further
-    for rect in collision_rects:
-        if player_rect.colliderect(rect):
-            player_pos.y = old_y
-            player_rect.center = player_pos
-            break
+        player_rect.center = player_pos  # Update rect position
+        # If the player touches a collision rectangle vertically, stop them from moving further
+        for rect in collision_rects:
+            if player_rect.colliderect(rect):
+                player_pos.y = old_y
+                player_rect.center = player_pos
+                break
 
     # Move horizontally
     old_x = player_pos.x
@@ -384,46 +497,93 @@ while running:
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             player_pos.x += player_vel * dt
 
-    player_rect.center = player_pos  # Update rect position
-    # if the player touches a collision rectangle horizontally, stop them from moving further
-    for rect in collision_rects:
-        if player_rect.colliderect(rect):
-            player_pos.x = old_x
-            player_rect.center = player_pos
-            break
+        player_rect.center = player_pos  # Update rect position
+        # if the player touches a collision rectangle horizontally, stop them from moving further
+        for rect in collision_rects:
+            if player_rect.colliderect(rect):
+                player_pos.x = old_x
+                player_rect.center = player_pos
+                break
 
-    # Close the game if the player presses escape - Riley
-    if keys[pygame.K_ESCAPE]:
-        exit()
+        # Close the game if the player presses escape - Riley
+        if keys[pygame.K_ESCAPE]:
+            exit() # Return to menu instead of exiting
 
-    # update player rectangle position to player position - Riley
-    player_rect.center = player_pos
+        # Clamp player position to background - Riley
+        if player_pos.x <= 30: # If player goes too far left, stop them
+            player_pos.x = 30
 
-    # Update camera to follow player - Alex
-    camera.update(player_pos)
+        if player_pos.x >= BG_WIDTH - 20: # If player goes too far right, stop them
+            player_pos.x = BG_WIDTH - 20
 
-    # Draw everything to render_surface (world coordinates)
-    render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+        if player_pos.y <= 20: # If the player goes too far up, stop them
+            player_pos.y = 20
+
+        if player_pos.y >= 880: # If the player goes too far down, stop them
+            player_pos.y = 880
+
+        player_pos.x = max(0, min(player_pos.x, BG_WIDTH))
+        player_pos.y = max(0, min(player_pos.y, BG_HEIGHT))
+
+        # update player rectangle position to player position - Riley
+        player_rect.center = player_pos
+
+        # Update camera to follow player - Alex
+        camera.update(player_pos)
+
+        # Draw everything to render_surface (world coordinates)
+        render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+
+        
+        # Draw NPC at camera-relative position
+        npc_screen_pos = camera.apply(npc_pos)
+        npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
+        render_surface.blit(npc_img, npc_draw_rect)
+
+        # Draw interaction prompt if player is close to NPC (and not in dialogue)
+        if not dialogue_active:
+            distance = player_pos.distance_to(npc_pos)
+            if distance <= interaction_distance:
+                prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
+                prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
+                             npc_screen_pos.y - 50)
+                render_surface.blit(prompt_text, prompt_pos)
 
 
-    # Draw NPC at camera-relative position
-    npc_screen_pos = camera.apply(npc_pos)
-    npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
-    render_surface.blit(npc_img, npc_draw_rect)
+        # Draw player at camera-relative position
+        player_screen_pos = camera.apply(player_pos)
+        player_draw_rect = player.get_rect(center=player_screen_pos)
+        render_surface.blit(player, player_draw_rect)
+        
+        # Lighting
+        if lighting_enabled:
+            # Fill the game with darkness
+            darkness_surface.fill(darkness_colour)
 
-    # Draw interaction prompt if player is close to NPC (and not in dialogue)
-    if not dialogue_active:
-        distance = player_pos.distance_to(npc_pos)
-        if distance <= interaction_distance:
-            prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
-            prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2,
-                        npc_screen_pos.y - 50)
-            render_surface.blit(prompt_text, prompt_pos)
 
-    # Draw player at camera-relative position
-    player_screen_pos = camera.apply(player_pos)
-    player_draw_rect = player.get_rect(center=player_screen_pos)
-    render_surface.blit(player, player_draw_rect)
+            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
+            max_radius = 250  # The outermost edge of the light
+            step = 2 # How quick the blending is
+
+            for radius in range(max_radius, 0, -step): # for each radius (out of 180 to 0, and how quickly it goes down by)
+                # Calculate brightness for the current ring
+                # Brightness increases, as radius gets smaller
+                light_intensity = 2
+                normalized_radius = radius / max_radius
+                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
+
+                # Ensure brightness stays within the valid range of 0 and 255
+                
+                brightness = max(0, min(255, brightness))
+
+                # RBG of the light
+                light_color = (brightness, brightness, brightness)
+
+                # Draw the circle for this ring of light onto our light map.
+                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
+
+
+            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
     # Draw the collision rectangles in a way that they do move with the camera, but stay fixed to the map
     for rect in collision_rects:
@@ -489,17 +649,33 @@ while running:
                 projectiles.remove(proj)
 
 
-    # Scale render_surface to screen for zoom effect
-    scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
-    screen.blit(scaled_surface, (0, 0))
+        # Scale render_surface to screen for zoom effect
+        scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
+        screen.blit(scaled_surface, (0, 0))
 
-    
-# Draw dialogue box on top of everything (if active)
-    if dialogue_active:
-        current_dialogue = npc_dialogue[dialogue_index]
-        draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
+        # Draw dialogue box on top of everything (if active)
+        if dialogue_active:
+            current_dialogue = npc_dialogue[dialogue_index]
+            draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
+        
+        # Draw timer on top left (always visible during gameplay)
+        current_time = pygame.time.get_ticks()
+        elapsed_seconds = (current_time - game_start_time) // 1000
+        timer_text = timer_font.render(f"Timer: {elapsed_seconds}s", True, (255, 255, 255))
+        
+        # semi-transparent background for better readability
+        timer_bg = pygame.Surface((timer_text.get_width() + 20, timer_text.get_height() + 10))
+        timer_bg.fill((0, 0, 0))
+        timer_bg.set_alpha(128)  # Semi-transparent
+        
+        screen.blit(timer_bg, (10, timer_border_location))
+        screen.blit(timer_text, (20, timer_location))
 
-    print(pygame.mouse.get_pos())
+       # Draw hearts on top left below timer
+        heart_y = timer_location + 40
+        for i in range(player_lives):
+            heart_x = 20 + (i * 35)  # 35 = heart width + spacing
+            screen.blit(heart_img, (heart_x, heart_y))
 
     # Update display
     pygame.display.flip()
