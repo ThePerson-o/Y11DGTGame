@@ -140,7 +140,7 @@ player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
-player_vel = 300 # player speed
+player_vel = 150 # player speed
 
 # Load heart icon
 heart_img = pygame.image.load("heart.png").convert_alpha()
