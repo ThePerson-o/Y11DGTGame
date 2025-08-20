@@ -25,7 +25,6 @@ ZOOM = 1.2  # zoom level
 CAMERA_MARGIN_X = 120
 CAMERA_MARGIN_Y = 80
 
-
 # Game Menu 
 game_state = "menu"
 
@@ -52,17 +51,20 @@ def create_menu_background(w, h):
         )
         pygame.draw.line(surf, colour_value, (0, y), (w, y))
     return surf
-menu_background = create_menu_background(WINDOW_WIDTH, WINDOW_HEIGHT)
 
+
+def get_menu_background():
+    global menu_background, menu_bg_size
+    current_size = (WINDOW_WIDTH, WINDOW_HEIGHT)
+    
+    if menu_background is None or menu_bg_size != current_size:
+        menu_background = create_menu_background(WINDOW_WIDTH, WINDOW_HEIGHT)
+        menu_bg_size = current_size
+    
+    return menu_background
 
 def draw_menu(): 
-    global menu_background
-    
-    # Rebuild if window size changed
-    if (menu_background.get_width(), menu_background.get_height()) != (WINDOW_WIDTH, WINDOW_HEIGHT):
-        menu_background = create_menu_background(WINDOW_WIDTH, WINDOW_HEIGHT)
-
-    screen.blit(menu_background, (0, 0))
+    screen.blit(get_menu_background(), (0, 0))
 
     # Game title
     title_font = pygame.font.Font(None, 100)
@@ -137,7 +139,6 @@ player_pos = pygame.Vector2(100, 550) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
 player_vel = 300 # player speed
-
 
 # Load heart icon
 heart_img = pygame.image.load("heart.png").convert_alpha()
@@ -236,7 +237,6 @@ class Camera:
         max_y = self.bg_height - self.height # finds y value of bottom right
         self.x = max(0, min(self.x, max_x))
         self.y = max(0, min(self.y, max_y))
-
 
     def apply(self, pos):
         # Convert world pos to camera/screen pos
