@@ -504,10 +504,8 @@ while running:
         draw_menu()
         
     elif game_state == "playing":
-        # OPTIMIZATION 6: All game logic moved inside playing state
         keys = pygame.key.get_pressed()
 
-        # OPTIMIZATION 2: Optimized movement with efficient collision detection
         # Move vertically
         old_y = player_pos.y
         if not dialogue_active:
