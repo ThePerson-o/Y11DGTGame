@@ -158,8 +158,9 @@ npc_rect = npc_img.get_rect(center=npc_pos)
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
+projectile_image = pygame.transform.scale(projectile_image, (30, 30))
 projectiles = [] # create a list to store information for projectiles (eg position)
-projectile_vel = 2 # set the speed of the projectile
+projectile_vel = 130 # set the speed of the projectile
 
 enemies = []
 enemy_projectiles = []
@@ -506,7 +507,7 @@ while running:
                     
                     direction = mouse_world_pos - player_pos
                     if direction.length() > 0:
-                        direction = direction.normalize() * 10
+                        direction = direction.normalize() * projectile_vel * dt
                         projectiles.append({"rect": projectile_rect, "velocity": direction})
 
     # Handle different game states
@@ -585,32 +586,6 @@ while running:
         player_screen_pos = camera.apply(player_pos)
         player_draw_rect = player.get_rect(center=player_screen_pos)
         render_surface.blit(player, player_draw_rect)
-        
-        # OPTIMIZATION 3: Improved lighting with fewer circles
-        if lighting_enabled:
-            # Fill the game with darkness
-            darkness_surface.fill(darkness_colour)
-
-            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
-            max_radius = 250  # The outermost edge of the light
-            step = 6  # OPTIMIZED: Increased from 2 to 6 (fewer circles = better performance)
-
-            for radius in range(max_radius, 0, -step): # Much fewer iterations now
-                # Calculate brightness for the current ring
-                light_intensity = 3
-                normalized_radius = radius / max_radius
-                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
-
-                # Ensure brightness stays within the valid range of 0 and 255
-                brightness = max(0, min(255, brightness))
-
-                # RBG of the light
-                light_color = (brightness, brightness, brightness)
-
-                # Draw the circle for this ring of light onto our light map.
-                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
-
-            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
         # Draw the collision rectangles in a way that they do move with the camera, but stay fixed to the map
         for rect in collision_rects:
@@ -619,7 +594,6 @@ while running:
             pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
         to_remove = []
-        moving = []
         deads = []
         for enemy in enemies:
             enemy_screen_pos = camera.apply(pygame.Vector2(enemy["rect"].topleft))
@@ -659,8 +633,8 @@ while running:
                     enemies.remove(dead)
 
         for proj in projectiles:
-            proj["rect"].centerx += proj["velocity"].x * dt
-            proj["rect"].centery += proj["velocity"].y * dt
+            proj["rect"].centerx += proj["velocity"].x * projectile_vel * dt
+            proj["rect"].centery += proj["velocity"].y * projectile_vel * dt
 
             cam_rect = proj["rect"].copy()
             cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
@@ -674,6 +648,33 @@ while running:
             for proj in to_remove:
                 if proj in projectiles:
                     projectiles.remove(proj)
+
+
+        # OPTIMIZATION 3: Improved lighting with fewer circles
+        if lighting_enabled:
+            # Fill the game with darkness
+            darkness_surface.fill(darkness_colour)
+
+            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
+            max_radius = 250  # The outermost edge of the light
+            step = 6  # OPTIMIZED: Increased from 2 to 6 (fewer circles = better performance)
+
+            for radius in range(max_radius, 0, -step): # Much fewer iterations now
+                # Calculate brightness for the current ring
+                light_intensity = 3
+                normalized_radius = radius / max_radius
+                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
+
+                # Ensure brightness stays within the valid range of 0 and 255
+                brightness = max(0, min(255, brightness))
+
+                # RBG of the light
+                light_color = (brightness, brightness, brightness)
+
+                # Draw the circle for this ring of light onto our light map.
+                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
+
+            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
         # Scale render_surface to screen for zoom effect
         scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
