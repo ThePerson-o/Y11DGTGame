@@ -268,14 +268,21 @@ collision_rects = [
     pygame.Rect(1947, 965, 2, 120)
 ]
 
-# OPTIMIZATION 1: Efficient collision detection
-def get_nearby_rects(player_pos, collision_rects, distance=200):
-    """Only return collision rects that are close to the player"""
-    nearby = []
-    for rect in collision_rects:
-        if abs(rect.centerx - player_pos.x) < distance and abs(rect.centery - player_pos.y) < distance:
-            nearby.append(rect)
-    return nearby
+def create_boundary_walls():
+    """Create collision rectangles for the outer boundaries of the background"""
+    boundary_rects = []
+    wall_thickness = 50  # Make walls thick enough so player can't slip through
+    
+    # Top wall (positioned above the background)
+    boundary_rects.append(pygame.Rect(0, -wall_thickness, BG_WIDTH, wall_thickness))
+    # Bottom wall (positioned below the background)
+    boundary_rects.append(pygame.Rect(0, BG_HEIGHT, BG_WIDTH, wall_thickness))
+    # Left wall (positioned to the left of the background)
+    boundary_rects.append(pygame.Rect(-wall_thickness, 0, wall_thickness, BG_HEIGHT))
+    # Right wall (positioned to the right of the background)
+    boundary_rects.append(pygame.Rect(BG_WIDTH, 0, wall_thickness, BG_HEIGHT))
+    
+    return boundary_rects
 
 # function for making diagnal collision lines
 def diagnal_line(length, start_x, start_y, x_step, y_step):
@@ -330,6 +337,10 @@ diagnal_line(125, 1170, 450, 2, 1)
 diagnal_line(110, 670, 450, -2, 1)
 diagnal_line(50, 1920, 950, 1, 0.5)
 diagnal_line(60, 1890, 1045, 1, 0.7)
+
+# Create boundary walls and add them to collision_rects
+boundary_walls = create_boundary_walls()
+collision_rects.extend(boundary_walls)
 
 # Create camera
 camera = Camera(
@@ -516,9 +527,8 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # OPTIMIZED: Only check nearby collision rects for vertical movement
-        nearby_rects = get_nearby_rects(player_pos, collision_rects)
-        for rect in nearby_rects:
+        # Simple collision detection for vertical movement (no optimization)
+        for rect in collision_rects:
             if player_rect.colliderect(rect):
                 player_pos.y = old_y
                 player_rect.center = player_pos
@@ -534,9 +544,8 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # OPTIMIZED: Only check nearby collision rects for horizontal movement
-        nearby_rects = get_nearby_rects(player_pos, collision_rects)
-        for rect in nearby_rects:
+        # Simple collision detection for horizontal movement (no optimization)
+        for rect in collision_rects:
             if player_rect.colliderect(rect):
                 player_pos.x = old_x
                 player_rect.center = player_pos
