@@ -162,15 +162,25 @@ projectile_image = pygame.transform.scale(projectile_image, (30, 30))
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 130 # set the speed of the projectile
 
-enemies = []
 enemy_projectiles = []
+enemy_proj_image = pygame.image.load('sprites/enemy_projectile.png').convert_alpha()
+enemy_proj_image = pygame.transform.scale(enemy_proj_image, (30, 30))
+enemy_proj_vel = 130
+
+enemies = []
 enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
-enemy_image = pygame.transform.scale(enemy_image, (70, 70))
-enemy_vel = 300
+enemy_image = pygame.transform.scale(enemy_image, (60, 60))
+enemy_vel = 100
 
 def create_enemy(pos_x, pos_y):
-    enemy_rect = pygame.Rect(pos_x, pos_y, 70, 70)
-    enemies.append({"rect": enemy_rect})
+    enemy_rect = pygame.Rect(pos_x, pos_y, 40, 40)
+    enemies.append({
+        "rect": enemy_rect,
+        "last_shot": 0,
+        "cooldown": 1000
+    })
+    
+create_enemy(400, 400)
 
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
@@ -593,6 +603,7 @@ while running:
             cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
             pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
+
         to_remove = []
         deads = []
         for enemy in enemies:
@@ -618,9 +629,6 @@ while running:
                 if proj_direction.length() != 0:
                     proj_direction = proj_direction.normalize() * projectile_vel
 
-                enemy_projectile_rect = projectile_image.get_rect(center = enemy["rect"].center)
-                enemy_projectiles.append({"rect": enemy_projectile_rect, "direction": proj_direction})
-
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
                     deads.append(enemy)
@@ -631,6 +639,28 @@ while running:
             for dead in deads:
                 if dead in enemies:
                     enemies.remove(dead)
+
+            # enemy projectiles
+            current_time = pygame.time.get_ticks()
+
+            if current_time - enemy.get("last_shot", 0) > enemy["cooldown"]:
+                enemy_pos = pygame.Vector2(enemy["rect"].center)
+                enemy_proj_direction = player_pos - enemy_pos
+                enemy_projectile_rect = projectile_image.get_rect(center = enemy["rect"].center)
+
+                if enemy_proj_direction.length() > 0:
+                    enemy_proj_direction = enemy_proj_direction.normalize() * enemy_proj_vel
+                    enemy_proj_rect = enemy_proj_image.get_rect(center = enemy_pos)
+                    enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
+                    enemy["last_shot"] = current_time
+
+                for proj in enemy_projectiles:
+                    proj["rect"].centerx += proj["velocity"].x * dt
+                    proj["rect"].centery += proj["velocity"].y * dt
+
+                    cam_rect = proj["rect"].copy()
+                    cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+                    render_surface.blit(enemy_proj_image, cam_rect.topleft)
 
         for proj in projectiles:
             proj["rect"].centerx += proj["velocity"].x * projectile_vel * dt
