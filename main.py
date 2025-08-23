@@ -165,7 +165,7 @@ projectile_vel = 130 # set the speed of the projectile
 enemy_projectiles = []
 enemy_proj_image = pygame.image.load('sprites/enemy_projectile.png').convert_alpha()
 enemy_proj_image = pygame.transform.scale(enemy_proj_image, (30, 30))
-enemy_proj_vel = 130
+enemy_proj_vel = 260
 
 enemies = []
 enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
@@ -646,7 +646,6 @@ while running:
             if current_time - enemy.get("last_shot", 0) > enemy["cooldown"]:
                 enemy_pos = pygame.Vector2(enemy["rect"].center)
                 enemy_proj_direction = player_pos - enemy_pos
-                enemy_projectile_rect = projectile_image.get_rect(center = enemy["rect"].center)
 
                 if enemy_proj_direction.length() > 0:
                     enemy_proj_direction = enemy_proj_direction.normalize() * enemy_proj_vel
@@ -654,13 +653,22 @@ while running:
                     enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
                     enemy["last_shot"] = current_time
 
-                for proj in enemy_projectiles:
-                    proj["rect"].centerx += proj["velocity"].x * dt
-                    proj["rect"].centery += proj["velocity"].y * dt
+        for proj in enemy_projectiles:
+            proj["rect"].centerx += proj["velocity"].x * dt
+            proj["rect"].centery += proj["velocity"].y * dt
 
-                    cam_rect = proj["rect"].copy()
-                    cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
-                    render_surface.blit(enemy_proj_image, cam_rect.topleft)
+            cam_rect = proj["rect"].copy()
+            cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+            render_surface.blit(enemy_proj_image, cam_rect.topleft)
+
+            for rect in collision_rects:
+                if rect.colliderect(proj["rect"]):
+                    to_remove.append(proj)
+                    break
+
+            for proj in to_remove:
+                if proj in enemy_projectiles:
+                    enemy_projectiles.remove(proj)
 
         for proj in projectiles:
             proj["rect"].centerx += proj["velocity"].x * projectile_vel * dt
