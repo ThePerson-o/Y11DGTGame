@@ -40,7 +40,7 @@ light_sources = []
 darkness_colour = (20,20,40)
 
 def create_menu_background(w, h):
-    surf = pygame.Surface((w, h))  # now safe: screen already exists
+    surf = pygame.Surface((w, h))  
     for y in range(h):
         t = y / h
         colour_value = (
@@ -51,7 +51,6 @@ def create_menu_background(w, h):
         pygame.draw.line(surf, colour_value, (0, y), (w, y))
     return surf
 
-# OPTIMIZATION 1: Cache menu background properly
 menu_background = None
 menu_bg_size = (0, 0)
 
@@ -74,7 +73,7 @@ def draw_menu():
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
     title_center_pos = (WINDOW_WIDTH // 2 , WINDOW_HEIGHT // 2)
   
-  # Draw shadow first
+    # Draw shadow first
     shadow_title = title_font.render("Dark to Light", True, (50, 50, 50))
     screen.blit(shadow_title, (title_rect.x + 3, title_rect.y + 3))
     screen.blit(title_text, title_rect)
@@ -268,7 +267,6 @@ collision_rects = [
     pygame.Rect(1947, 965, 2, 120)
 ]
 
-# OPTIMIZATION 1: Efficient collision detection
 def get_nearby_rects(player_pos, collision_rects, distance=200):
     """Only return collision rects that are close to the player"""
     nearby = []
@@ -340,7 +338,6 @@ camera = Camera(
     zoom=ZOOM
 )
 
-# OPTIMIZATION 4: Only create surfaces when needed
 render_surface = None
 darkness_surface = None
 current_camera_size = (0, 0)
@@ -516,7 +513,6 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # OPTIMIZED: Only check nearby collision rects for vertical movement
         nearby_rects = get_nearby_rects(player_pos, collision_rects)
         for rect in nearby_rects:
             if player_rect.colliderect(rect):
@@ -534,7 +530,6 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # OPTIMIZED: Only check nearby collision rects for horizontal movement
         nearby_rects = get_nearby_rects(player_pos, collision_rects)
         for rect in nearby_rects:
             if player_rect.colliderect(rect):
@@ -552,7 +547,6 @@ while running:
         # Update camera to follow player - Alex
         camera.update(player_pos)
 
-        # OPTIMIZATION 4: Get optimized render surfaces
         render_surface, darkness_surface = get_render_surfaces()
 
         # Draw everything to render_surface (world coordinates)
@@ -577,14 +571,13 @@ while running:
         player_draw_rect = player.get_rect(center=player_screen_pos)
         render_surface.blit(player, player_draw_rect)
         
-        # OPTIMIZATION 3: Improved lighting with fewer circles
         if lighting_enabled:
             # Fill the game with darkness
             darkness_surface.fill(darkness_colour)
 
             light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
             max_radius = 250  # The outermost edge of the light
-            step = 6  # OPTIMIZED: Increased from 2 to 6 (fewer circles = better performance)
+            step = 6  
 
             for radius in range(max_radius, 0, -step): # Much fewer iterations now
                 # Calculate brightness for the current ring
