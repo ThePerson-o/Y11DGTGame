@@ -27,6 +27,7 @@ CAMERA_MARGIN_Y = 80
 
 # Game Menu 
 game_state = "menu"
+game_over_time = 0
 
 # Timer variables
 game_start_time = 0
@@ -113,6 +114,16 @@ def draw_menu():
     
     return button_rect
 
+def game_over():
+    game_over_font = pygame.font.Font(None, 50)
+    game_over_txt = game_over_font.render('Game Over', True, 'white')
+    game_over_rect = game_over_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+
+    bg = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+    screen.blit(bg, (0, 0))
+    screen.blit(game_over_txt, game_over_rect)
+
 # Map settings - Alex
 TILE_SIZE = 40 # Sets the size of each tile
 MAP_COLS = WINDOW_WIDTH // TILE_SIZE 
@@ -171,16 +182,19 @@ enemies = []
 enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (60, 60))
 enemy_vel = 100
+enemy_positions = [
+    (400, 400)
+]
 
-def create_enemy(pos_x, pos_y):
-    enemy_rect = pygame.Rect(pos_x, pos_y, 40, 40)
+def create_enemy(pos):
+    enemy_rect = pygame.Rect(pos.x, pos.y, 40, 40)
     enemies.append({
         "rect": enemy_rect,
         "last_shot": 0,
         "cooldown": 1000
     })
     
-create_enemy(400, 400)
+create_enemy(pygame.Vector2(enemy_positions[0]))
 
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
@@ -458,6 +472,7 @@ while running:
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(mouse_pos):
                     game_state = "playing"
+                    player_lives = 3
                     trumpet.play()
                     game_start_time = pygame.time.get_ticks()  # Record when game started
         
@@ -524,6 +539,13 @@ while running:
     if game_state == "menu":
         # Draw the menu
         draw_menu()
+
+    elif game_state == "game_over":
+        game_over()
+
+        if pygame.time.get_ticks() - game_over_time > 2000:
+            game_state = "menu"
+            game_over_time = 0
         
     elif game_state == "playing":
         keys = pygame.key.get_pressed()
@@ -629,6 +651,19 @@ while running:
                 if proj_direction.length() != 0:
                     proj_direction = proj_direction.normalize() * projectile_vel
 
+                # enemy projectiles
+                current_time = pygame.time.get_ticks()
+
+                if current_time - enemy.get("last_shot", 0) > enemy["cooldown"]:
+                    enemy_pos = pygame.Vector2(enemy["rect"].center)
+                    enemy_proj_direction = player_pos - enemy_pos
+
+                    if enemy_proj_direction.length() > 0:
+                        enemy_proj_direction = enemy_proj_direction.normalize() * enemy_proj_vel
+                        enemy_proj_rect = enemy_proj_image.get_rect(center = enemy_pos)
+                        enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
+                        enemy["last_shot"] = current_time
+
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
                     deads.append(enemy)
@@ -640,19 +675,6 @@ while running:
                 if dead in enemies:
                     enemies.remove(dead)
 
-            # enemy projectiles
-            current_time = pygame.time.get_ticks()
-
-            if current_time - enemy.get("last_shot", 0) > enemy["cooldown"]:
-                enemy_pos = pygame.Vector2(enemy["rect"].center)
-                enemy_proj_direction = player_pos - enemy_pos
-
-                if enemy_proj_direction.length() > 0:
-                    enemy_proj_direction = enemy_proj_direction.normalize() * enemy_proj_vel
-                    enemy_proj_rect = enemy_proj_image.get_rect(center = enemy_pos)
-                    enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
-                    enemy["last_shot"] = current_time
-
         for proj in enemy_projectiles:
             proj["rect"].centerx += proj["velocity"].x * dt
             proj["rect"].centery += proj["velocity"].y * dt
@@ -660,6 +682,12 @@ while running:
             cam_rect = proj["rect"].copy()
             cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
             render_surface.blit(enemy_proj_image, cam_rect.topleft)
+
+            if player_rect.colliderect(proj["rect"]):
+                player_lives -= 1
+                
+                if proj in enemy_projectiles:
+                    to_remove.append(proj)
 
             for rect in collision_rects:
                 if rect.colliderect(proj["rect"]):
@@ -687,6 +715,10 @@ while running:
                 if proj in projectiles:
                     projectiles.remove(proj)
 
+
+        if player_lives == 0:
+            game_state = "game_over"
+            game_over_time = pygame.time.get_ticks()
 
         # OPTIMIZATION 3: Improved lighting with fewer circles
         if lighting_enabled:
