@@ -1,7 +1,8 @@
 import pygame
 import sys
 import os
-import pickle as p 
+import pickle as p
+import random
 
 # Start pygame
 pygame.init()
@@ -18,6 +19,7 @@ end_colour = (80, 80, 120)
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
 trumpet.set_volume(0.3)
 water_drip = pygame.mixer.Sound("water_drip.mp3")
+insane_guitar = pygame.mixer.Sound("insane_guitar.mp3")
 
 ZOOM = 1.2  # zoom level 
 
@@ -27,6 +29,7 @@ CAMERA_MARGIN_Y = 80
 
 # Game Menu 
 game_state = "menu"
+game_over_time = 0
 
 # Timer variables
 game_start_time = 0
@@ -112,6 +115,17 @@ def draw_menu():
     
     return button_rect
 
+def game_over():
+    game_over_font = pygame.font.Font(None, 80)
+    game_over_txt = game_over_font.render('Game Over', True, 'white')
+    game_over_rect = game_over_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+
+    bg = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+    screen.blit(bg, (0, 0))
+    screen.blit(game_over_txt, game_over_rect)
+    pygame.init()
+
 # Map settings - Alex
 TILE_SIZE = 40 # Sets the size of each tile
 MAP_COLS = WINDOW_WIDTH // TILE_SIZE 
@@ -136,7 +150,7 @@ BG_WIDTH, BG_HEIGHT = background_img.get_size()
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
 player = pygame.transform.scale(player, (50, 50)) # set player size
-player_pos = pygame.Vector2(100, 550) # set initial player position
+player_pos = pygame.Vector2(1150, 950) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
 player_vel = 150 # player speed
@@ -161,15 +175,66 @@ projectile_image = pygame.transform.scale(projectile_image, (30, 30))
 projectiles = [] # create a list to store information for projectiles (eg position)
 projectile_vel = 130 # set the speed of the projectile
 
-enemies = []
 enemy_projectiles = []
-enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
-enemy_image = pygame.transform.scale(enemy_image, (70, 70))
-enemy_vel = 300
+enemy_proj_image = pygame.image.load('sprites/enemy_projectile.png').convert_alpha()
+enemy_proj_image = pygame.transform.scale(enemy_proj_image, (30, 30))
+enemy_proj_vel = 400
 
-def create_enemy(pos_x, pos_y):
-    enemy_rect = pygame.Rect(pos_x, pos_y, 70, 70)
-    enemies.append({"rect": enemy_rect})
+portal_img = pygame.image.load('sprites/portal.png')
+portal_img = pygame.transform.scale(portal_img, (120, 120))
+portal_rect = pygame.Rect(730, 1100, 150, 150)
+
+enemies = []
+enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
+enemy_image = pygame.transform.scale(enemy_image, (60, 60))
+enemy_vel = 100
+enemy_positions = [
+    pygame.Vector2(950, 1000),
+    pygame.Vector2(1140, 700),
+    pygame.Vector2(700, 1100),
+    pygame.Vector2(800, 1100),
+    pygame.Vector2(700, 650),
+    pygame.Vector2(850, 650)
+]
+
+interacted_with_npc = False
+level_1_spawned = False
+
+def create_enemy(pos):
+    enemy_rect = pygame.Rect(pos.x, pos.y, 40, 40)
+    enemies.append({
+        "rect": enemy_rect,
+        "last_shot": 0,
+        "cooldown": 1000
+    })
+
+def reset_enemies():
+    enemies.clear()
+    if interacted_with_npc:
+        for pos in enemy_positions:
+            create_enemy(pos)
+    
+def create_enemies():
+    for pos in enemy_positions:
+        create_enemy(pos)
+
+def level_1():
+    create_enemies()
+
+hearts = []
+def create_heart(pos):
+    heart_rect = pygame.Rect(pos.x, pos.y, 20, 20)
+    hearts.append({"rect": heart_rect})
+
+def spawn_hearts():
+    heart_positions = [
+        pygame.Vector2(750, 1250),
+        pygame.Vector2(780, 650)
+    ]
+    for pos in heart_positions:
+        create_heart(pos)
+
+spawn_hearts()
 
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
@@ -265,7 +330,10 @@ collision_rects = [
     pygame.Rect(50, 200, 1870, 2),
     pygame.Rect(1920, 200, 2, 750),
     pygame.Rect(680, 1295, 242, 2),
-    pygame.Rect(1947, 965, 2, 120)
+    pygame.Rect(1947, 965, 2, 120),
+    pygame.Rect(813, 1148, 17, 45),
+    pygame.Rect(755, 1148, 20, 45),
+    pygame.Rect(755, 1160, 60, 2)
 ]
 
 def create_boundary_walls():
@@ -337,6 +405,12 @@ diagnal_line(125, 1170, 450, 2, 1)
 diagnal_line(110, 670, 450, -2, 1)
 diagnal_line(50, 1920, 950, 1, 0.5)
 diagnal_line(60, 1890, 1045, 1, 0.7)
+diagnal_line(20, 790, 1105, 1.5, 1)
+diagnal_line(20, 790, 1105, -1.5, 1)
+diagnal_line(10, 820, 1125, 1, 2.3)
+diagnal_line(7, 760, 1125, -1, 4)
+diagnal_line(15, 830, 1193, 1, 1)
+diagnal_line(15, 755, 1193, -1, 1)
 
 # Create boundary walls and add them to collision_rects
 boundary_walls = create_boundary_walls()
@@ -446,9 +520,15 @@ while running:
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(mouse_pos):
                     game_state = "playing"
+                    player_lives = 3
+                    interacted_with_npc = False
+                    level_1_spawned = False
+                    reset_enemies()
+                    player_pos = pygame.Vector2(1150, 950)
+                    player_rect.center = player_pos
                     trumpet.play()
                     game_start_time = pygame.time.get_ticks()  # Record when game started
-        
+
         # Game interactions (only when playing)
         elif game_state == "playing":
             # Fullscreen - Alex
@@ -472,8 +552,8 @@ while running:
                 camera.height = int(WINDOW_HEIGHT / ZOOM)
 
             # Handle dialogue interaction
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_e: 
-                if not dialogue_active:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+                if not dialogue_active and not interacted_with_npc:
                     # Check if player is close enough to NPC
                     distance = player_pos.distance_to(npc_pos)
                     if distance <= interaction_distance:
@@ -494,6 +574,8 @@ while running:
                         if dialogue_index >= len(npc_dialogue):
                             dialogue_active = False
                             dialogue_index = 0
+                            interacted_with_npc = True
+                                
                 else:
                     # Original projectile code
                     projectile_rect = projectile_image.get_rect(center = player_pos)
@@ -512,6 +594,13 @@ while running:
     if game_state == "menu":
         # Draw the menu
         draw_menu()
+
+    elif game_state == "game_over":
+        game_over()
+
+        if pygame.time.get_ticks() - game_over_time > 2000:
+            game_state = "menu"
+            game_over_time = 0
         
     elif game_state == "playing":
         keys = pygame.key.get_pressed()
@@ -571,13 +660,17 @@ while running:
         render_surface.blit(npc_img, npc_draw_rect)
 
         # Draw interaction prompt if player is close to NPC (and not in dialogue)
-        if not dialogue_active:
+        if not dialogue_active and not interacted_with_npc:
             distance = player_pos.distance_to(npc_pos)
             if distance <= interaction_distance:
                 prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
                 prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
                              npc_screen_pos.y - 50)
                 render_surface.blit(prompt_text, prompt_pos)
+
+        portal_rect2 = portal_rect.copy()
+        portal_rect2.topleft = camera.apply(pygame.Vector2(portal_rect2.topleft))
+        render_surface.blit(portal_img, portal_rect2.topleft)
 
         # Draw player at camera-relative position
         player_screen_pos = camera.apply(player_pos)
@@ -615,6 +708,7 @@ while running:
             cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
             pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
+
         to_remove = []
         deads = []
         for enemy in enemies:
@@ -640,8 +734,18 @@ while running:
                 if proj_direction.length() != 0:
                     proj_direction = proj_direction.normalize() * projectile_vel
 
-                enemy_projectile_rect = projectile_image.get_rect(center = enemy["rect"].center)
-                enemy_projectiles.append({"rect": enemy_projectile_rect, "direction": proj_direction})
+                # enemy projectiles
+                current_time = pygame.time.get_ticks()
+
+                if current_time - enemy.get("last_shot", 0) > enemy["cooldown"]:
+                    enemy_pos = pygame.Vector2(enemy["rect"].center)
+                    enemy_proj_direction = player_pos - enemy_pos
+
+                    if enemy_proj_direction.length() > 0:
+                        enemy_proj_direction = enemy_proj_direction.normalize() * enemy_proj_vel
+                        enemy_proj_rect = enemy_proj_image.get_rect(center = enemy_pos)
+                        enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
+                        enemy["last_shot"] = current_time
 
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
@@ -654,13 +758,36 @@ while running:
                 if dead in enemies:
                     enemies.remove(dead)
 
+        for proj in enemy_projectiles:
+            proj["rect"].centerx += proj["velocity"].x * dt
+            proj["rect"].centery += proj["velocity"].y * dt
+
+            cam_rect = proj["rect"].copy()
+            cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+            render_surface.blit(enemy_proj_image, cam_rect.topleft)
+
+            if player_rect.colliderect(proj["rect"]):
+                player_lives -= 1
+                
+                if proj in enemy_projectiles:
+                    to_remove.append(proj)
+
+            for rect in collision_rects:
+                if rect.colliderect(proj["rect"]):
+                    to_remove.append(proj)
+                    break
+
+            for proj in to_remove:
+                if proj in enemy_projectiles:
+                    enemy_projectiles.remove(proj)
+
         for proj in projectiles:
             proj["rect"].centerx += proj["velocity"].x * projectile_vel * dt
             proj["rect"].centery += proj["velocity"].y * projectile_vel * dt
 
-            cam_rect = proj["rect"].copy()
-            cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
-            render_surface.blit(projectile_image, cam_rect.topleft)
+            proj_rect = proj["rect"].copy()
+            proj_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
+            render_surface.blit(projectile_image, proj_rect.topleft)
 
             for rect in collision_rects:
                 if rect.colliderect(proj["rect"]):
@@ -670,6 +797,32 @@ while running:
             for proj in to_remove:
                 if proj in projectiles:
                     projectiles.remove(proj)
+
+
+        if player_lives == 0:
+            game_state = "game_over"
+            game_over_time = pygame.time.get_ticks()
+
+        if interacted_with_npc:
+            if not level_1_spawned:
+                insane_guitar.play()
+                level_1()
+                level_1_spawned = True
+
+        hearts_to_remove = []
+        if player_lives < 3:
+            for heart in hearts:
+                heart_rect = heart["rect"].copy()
+                heart_rect.topleft = camera.apply(pygame.Vector2(heart["rect"].topleft))
+                render_surface.blit(heart_img, heart_rect.topleft)
+
+                if player_rect.colliderect(heart["rect"]):
+                    player_lives += 1
+                    hearts_to_remove.append(heart)
+
+            for heart in hearts_to_remove:
+                if heart in hearts:
+                    hearts.remove(heart)
 
 
         # OPTIMIZATION 3: Improved lighting with fewer circles
@@ -725,6 +878,8 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
+
+    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
