@@ -18,6 +18,11 @@ end_colour = (80, 80, 120)
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
 trumpet.set_volume(0.3)
 water_drip = pygame.mixer.Sound("water_drip.mp3")
+soundtrack_1 = pygame.mixer.Sound("soundtrack 1.mp3")
+soundtrack_2 = pygame.mixer.Sound("soundtrack 2.mp3")
+soundtrack_1.set_volume(0.2)
+soundtrack_2.set_volume(0.2)
+
 
 ZOOM = 1.2  # zoom level 
 
@@ -586,6 +591,8 @@ while running:
                     # Set sound volume accordingly
                     trumpet.set_volume(0.3 if sound_enabled else 0.0)
                     water_drip.set_volume(1.0 if sound_enabled else 0.0)
+                    soundtrack_1.set_volume(0.5 if sound_enabled else 0.0)
+                    soundtrack_2.set_volume(0.5 if sound_enabled else 0.0)
                 if back_button.collidepoint(mouse_pos):
                     game_state = "menu"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -602,6 +609,9 @@ while running:
                             selected_level = level_name
                             game_state = "playing"
                             game_start_time = pygame.time.get_ticks()
+                            # Play soundtrack 2 (one loop, then repeat)
+                            soundtrack_2.stop()
+                            soundtrack_2.play(loops=0)
                         # Level 2 and Level 3 do nothing for now
                 if back_button.collidepoint(mouse_pos):
                     game_state = "menu"
@@ -713,7 +723,7 @@ while running:
 
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
-            pass
+            exit()
 
         # update player rectangle position to player position - Riley
         player_rect.center = player_pos
@@ -861,6 +871,11 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
+
+    # Check if soundtrack_1 finished and repeat if needed
+    if selected_level == "Level 1":
+        if not pygame.mixer.get_busy():
+            soundtrack_2.play(loops=0)
 
     # Update display
     pygame.display.flip()
