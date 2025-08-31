@@ -27,6 +27,7 @@ CAMERA_MARGIN_Y = 80
 
 # Game Menu 
 game_state = "menu"
+selected_level = None  # Store the selected level
 
 # Timer variables
 game_start_time = 0
@@ -74,7 +75,7 @@ def draw_menu():
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
     title_center_pos = (WINDOW_WIDTH // 2 , WINDOW_HEIGHT // 2)
   
-  # Draw shadow first
+    # Draw shadow first
     shadow_title = title_font.render("Dark to Light", True, (50, 50, 50))
     screen.blit(shadow_title, (title_rect.x + 3, title_rect.y + 3))
     screen.blit(title_text, title_rect)
@@ -82,28 +83,48 @@ def draw_menu():
     # Play button
     button_font = pygame.font.Font(None, 60)
     button_text = button_font.render("Play", True, (255, 255, 255))
-    
-    # Button rectangle
     button_width = 200
     button_height = 80
     button_x = (WINDOW_WIDTH - button_width) // 2
     button_y = WINDOW_HEIGHT // 2
-    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-    
-    # Check if mouse is hovering over button
+    play_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
     mouse_pos = pygame.mouse.get_pos()
-    is_hovering = button_rect.collidepoint(mouse_pos)
-    
-    # Draw button with hover effect
-    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
-    border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
-    
-    pygame.draw.rect(screen, button_color, button_rect)
-    pygame.draw.rect(screen, border_color, button_rect, 3)
-    
-    # Center the text on the button
-    text_rect = button_text.get_rect(center=button_rect.center)
+    is_hovering_play = play_button_rect.collidepoint(mouse_pos)
+    button_color_play = (70, 130, 180) if is_hovering_play else (40, 80, 140)
+    border_color_play = (100, 150, 200) if is_hovering_play else (80, 80, 120)
+    pygame.draw.rect(screen, button_color_play, play_button_rect)
+    pygame.draw.rect(screen, border_color_play, play_button_rect, 3)
+    text_rect = button_text.get_rect(center=play_button_rect.center)
     screen.blit(button_text, text_rect)
+
+    # Settings button below Play button
+    settings_button_width = 250
+    settings_button_height = 80
+    settings_button_x = button_x - 25
+    settings_button_y = button_y + button_height + 30  # 30px below Play button
+    settings_button_rect = pygame.Rect(settings_button_x, settings_button_y, settings_button_width, settings_button_height)
+    is_hovering_settings = settings_button_rect.collidepoint(mouse_pos)
+    button_color_settings = (70, 130, 180) if is_hovering_settings else (40, 80, 140)
+    border_color_settings = (100, 150, 200) if is_hovering_settings else (80, 80, 120)
+    pygame.draw.rect(screen, button_color_settings, settings_button_rect)
+    pygame.draw.rect(screen, border_color_settings, settings_button_rect, 3)
+
+    # Settings icon (left side of button)
+    settings_icon = pygame.image.load("setting.png")
+    icon_width, icon_height = settings_icon.get_size()
+    shrunk_size = (int(icon_width * 0.1), int(icon_height * 0.1))
+    settings_icon = pygame.transform.smoothscale(settings_icon, shrunk_size)
+    icon_rect = settings_icon.get_rect()
+    icon_rect.centery = settings_button_rect.centery
+    icon_rect.left = settings_button_rect.left + 10
+    screen.blit(settings_icon, icon_rect)
+
+    # Settings text (right of icon, centered vertically)
+    settings_text = button_font.render("Settings", True, (255, 255, 255))
+    settings_text_rect = settings_text.get_rect()
+    settings_text_rect.centery = settings_button_rect.centery
+    settings_text_rect.left = icon_rect.right + 10
+    screen.blit(settings_text, settings_text_rect)
 
     # Instructions
     instruction_font = pygame.font.Font(None, 30)
@@ -111,7 +132,8 @@ def draw_menu():
     instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
     screen.blit(instruction_text, instruction_rect)
     
-    return button_rect
+    # Return both button rects for click handling
+    return play_button_rect, settings_button_rect
 
 # Map settings - Alex
 TILE_SIZE = 40 # Sets the size of each tile
@@ -386,7 +408,7 @@ def wrap_text(text, font, max_width):
             current_line.append(word) # Add the word to the line
         else:
             if current_line:
-                lines.append(' '.join(current_line)) # Adds the current_line to the lines list
+                lines.append(' '.join(current_line)) # Adds the currentLine to the lines list
                 current_line = [word] # Current word starts a new line
             else: 
                 lines.append(word) # If current line is empty, then add word to a new line
@@ -429,6 +451,108 @@ def draw_dialogue_box(surface, speaker, text):
     indicator_y = box_y + dialogue_box_height - 30
     surface.blit(indicator_surface, (indicator_x, indicator_y))
 
+def draw_level_selector():
+    """Draw the level selection menu and return a list of level button rects and the back button rect"""
+    screen.blit(get_menu_background(), (0, 0))
+
+    # Title
+    title_font = pygame.font.Font(None, 80)
+    title_text = title_font.render("Select Level", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 - 100))
+    screen.blit(title_text, title_rect) 
+
+    # 3 levels
+    levels = ["Level 1", "Level 2", "Level 3"]
+    button_font = pygame.font.Font(None, 60)
+    button_width = 300
+    button_height = 80
+    button_spacing = 40
+    buttons = []
+    start_y = WINDOW_HEIGHT // 2  - ((button_height + button_spacing) * len(levels)) // 2
+
+    for i, level_name in enumerate(levels):
+        button_x = (WINDOW_WIDTH - button_width) // 2
+        button_y = start_y + i * (button_height + button_spacing)
+        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        mouse_pos = pygame.mouse.get_pos()
+        is_hovering = button_rect.collidepoint(mouse_pos)
+        button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
+        border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
+        pygame.draw.rect(screen, button_color, button_rect)
+        pygame.draw.rect(screen, border_color, button_rect, 3)
+        text_surface = button_font.render(level_name, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=button_rect.center)
+        screen.blit(text_surface, text_rect)
+        buttons.append((button_rect, level_name))
+
+    # Back button
+    back_button_font = pygame.font.Font(None, 50)
+    back_text = back_button_font.render("Back", True, (255, 255, 255))
+    back_button_width = 180
+    back_button_height = 60
+    back_button_x = (WINDOW_WIDTH - back_button_width) // 2
+    back_button_y = start_y + len(levels) * (button_height + button_spacing) + 20
+    back_button_rect = pygame.Rect(back_button_x, back_button_y, back_button_width, back_button_height)
+    is_hovering_back = back_button_rect.collidepoint(mouse_pos)
+    back_button_color = (70, 130, 180) if is_hovering_back else (40, 80, 140)
+    back_border_color = (100, 150, 200) if is_hovering_back else (80, 80, 120)
+    pygame.draw.rect(screen, back_button_color, back_button_rect)
+    pygame.draw.rect(screen, back_border_color, back_button_rect, 3)
+    back_text_rect = back_text.get_rect(center=back_button_rect.center)
+    screen.blit(back_text, back_text_rect)
+
+    return buttons, back_button_rect
+
+# Settings menu variables
+sound_enabled = True  
+
+def draw_settings_menu():
+    """Draw the settings menu and return the sound toggle button rect"""
+    screen.blit(get_menu_background(), (0, 0)) 
+
+    # Title
+    title_font = pygame.font.Font(None, 80)
+    title_text = title_font.render("Settings", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4))
+    screen.blit(title_text, title_rect)
+
+    # Sound toggle button
+    button_font = pygame.font.Font(None, 60)
+    button_width = 300
+    button_height = 80
+    button_x = (WINDOW_WIDTH - button_width) // 2
+    button_y = WINDOW_HEIGHT // 2
+
+    sound_text = "Sound: ON" if sound_enabled else "Sound: OFF"
+    sound_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    mouse_pos = pygame.mouse.get_pos()
+    is_hovering = sound_button_rect.collidepoint(mouse_pos)
+    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
+    border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
+    pygame.draw.rect(screen, button_color, sound_button_rect)
+    pygame.draw.rect(screen, border_color, sound_button_rect, 3)
+    text_surface = button_font.render(sound_text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect(center=sound_button_rect.center)
+    screen.blit(text_surface, text_rect)
+
+    # Back button
+    back_button_font = pygame.font.Font(None, 50)
+    back_text = back_button_font.render("Back", True, (255, 255, 255))
+    back_button_width = 180
+    back_button_height = 60
+    back_button_x = (WINDOW_WIDTH - back_button_width) // 2
+    back_button_y = button_y + button_height + 40
+    back_button_rect = pygame.Rect(back_button_x, back_button_y, back_button_width, back_button_height)
+    is_hovering_back = back_button_rect.collidepoint(mouse_pos)
+    back_button_color = (70, 130, 180) if is_hovering_back else (40, 80, 140)
+    back_border_color = (100, 150, 200) if is_hovering_back else (80, 80, 120)
+    pygame.draw.rect(screen, back_button_color, back_button_rect)
+    pygame.draw.rect(screen, back_border_color, back_button_rect, 3)
+    back_text_rect = back_text.get_rect(center=back_button_rect.center)
+    screen.blit(back_text, back_text_rect)
+
+    return sound_button_rect, back_button_rect
+
 # Main loop
 running = True
 while running:
@@ -442,14 +566,48 @@ while running:
         # Menu interactions
         if game_state == "menu":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Get the play button rect from draw_menu
-                play_button = draw_menu()  # This will be called again below, but we need the rect
+                play_button, settings_button = draw_menu()
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(mouse_pos):
-                    game_state = "playing"
+                    game_state = "level_select"
                     trumpet.play()
-                    game_start_time = pygame.time.get_ticks()  # Record when game started
-        
+                if settings_button.collidepoint(mouse_pos):
+                    game_state = "settings"
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False  # Exit game from main menu
+
+        # Settings interactions
+        elif game_state == "settings":
+            sound_button, back_button = draw_settings_menu()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_pos = pygame.mouse.get_pos()
+                if sound_button.collidepoint(mouse_pos):
+                    sound_enabled = not sound_enabled
+                    # Set sound volume accordingly
+                    trumpet.set_volume(0.3 if sound_enabled else 0.0)
+                    water_drip.set_volume(1.0 if sound_enabled else 0.0)
+                if back_button.collidepoint(mouse_pos):
+                    game_state = "menu"
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                game_state = "menu"
+
+        # Level selector interactions
+        elif game_state == "level_select":
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                level_buttons, back_button = draw_level_selector()
+                mouse_pos = pygame.mouse.get_pos()
+                for button_rect, level_name in level_buttons:
+                    if button_rect.collidepoint(mouse_pos):
+                        if level_name == "Level 1":
+                            selected_level = level_name
+                            game_state = "playing"
+                            game_start_time = pygame.time.get_ticks()
+                        # Level 2 and Level 3 do nothing for now
+                if back_button.collidepoint(mouse_pos):
+                    game_state = "menu"
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                game_state = "menu"  # Go back to main menu from level select
+
         # Game interactions (only when playing)
         elif game_state == "playing":
             # Fullscreen - Alex
@@ -511,9 +669,11 @@ while running:
 
     # Handle different game states
     if game_state == "menu":
-        # Draw the menu
         draw_menu()
-        
+    elif game_state == "settings":
+        draw_settings_menu()
+    elif game_state == "level_select":
+        draw_level_selector()
     elif game_state == "playing":
         keys = pygame.key.get_pressed()
 
@@ -553,7 +713,7 @@ while running:
 
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
-            exit() # Return to menu instead of exiting
+            pass
 
         # update player rectangle position to player position - Riley
         player_rect.center = player_pos
@@ -586,7 +746,6 @@ while running:
         player_draw_rect = player.get_rect(center=player_screen_pos)
         render_surface.blit(player, player_draw_rect)
         
-        # OPTIMIZATION 3: Improved lighting with fewer circles
         if lighting_enabled:
             # Fill the game with darkness
             darkness_surface.fill(darkness_colour)
