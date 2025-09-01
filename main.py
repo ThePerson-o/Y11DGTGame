@@ -791,7 +791,7 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # Simple collision detection for vertical movement (no optimization)
+        # Simple collision detection for vertical movement
         for rect in collision_rects:
             if player_rect.colliderect(rect):
                 player_pos.y = old_y
@@ -808,7 +808,7 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # Simple collision detection for horizontal movement (no optimization)
+        # Simple collision detection for horizontal movement 
         for rect in collision_rects:
             if player_rect.colliderect(rect):
                 player_pos.x = old_x
@@ -1001,14 +1001,13 @@ while running:
                     hearts.remove(heart)
 
 
-        # OPTIMIZATION 3: Improved lighting with fewer circles
         if lighting_enabled:
             # Fill the game with darkness
             darkness_surface.fill(darkness_colour)
 
             light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
             max_radius = 250  # The outermost edge of the light
-            step = 6  # OPTIMIZED: Increased from 2 to 6 (fewer circles = better performance)
+            step = 6  
 
             for radius in range(max_radius, 0, -step): # Much fewer iterations now
                 # Calculate brightness for the current ring
