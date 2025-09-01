@@ -2,7 +2,6 @@ import pygame
 import sys
 import os
 import pickle as p
-import random
 
 # Start pygame
 pygame.init()
@@ -221,6 +220,16 @@ def create_enemies():
 def level_1():
     create_enemies()
 
+lvl2_background_img = pygame.image.load('background.png')
+in_level_2 = False
+
+def level_2():
+    global in_level_2, render_surface, darkness_surface
+    in_level_2 = True
+    render_surface, darkness_surface = get_render_surfaces()
+    render_surface.blit(lvl2_background_img, (0, 0))
+
+
 hearts = []
 def create_heart(pos):
     heart_rect = pygame.Rect(pos.x, pos.y, 20, 20)
@@ -229,7 +238,7 @@ def create_heart(pos):
 def spawn_hearts():
     heart_positions = [
         pygame.Vector2(750, 1250),
-        pygame.Vector2(780, 650)
+        pygame.Vector2(780, 650)    
     ]
     for pos in heart_positions:
         create_heart(pos)
@@ -335,6 +344,7 @@ collision_rects = [
     pygame.Rect(755, 1148, 20, 45),
     pygame.Rect(755, 1160, 60, 2)
 ]
+
 
 def create_boundary_walls():
     """Create collision rectangles for the outer boundaries of the background"""
@@ -618,6 +628,9 @@ while running:
         # Simple collision detection for vertical movement (no optimization)
         for rect in collision_rects:
             if player_rect.colliderect(rect):
+                if rect == pygame.Rect(755, 1160, 60, 2):
+                    level_2()
+
                 player_pos.y = old_y
                 player_rect.center = player_pos
                 break
@@ -635,6 +648,9 @@ while running:
         # Simple collision detection for horizontal movement (no optimization)
         for rect in collision_rects:
             if player_rect.colliderect(rect):
+                if rect == pygame.Rect(755, 1160, 60, 2):
+                    level_2()
+
                 player_pos.x = old_x
                 player_rect.center = player_pos
                 break
@@ -652,7 +668,11 @@ while running:
         render_surface, darkness_surface = get_render_surfaces()
 
         # Draw everything to render_surface (world coordinates)
-        render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+        if in_level_2:
+            render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+
+        else:
+            render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
         # Draw NPC at camera-relative position
         npc_screen_pos = camera.apply(npc_pos)
@@ -676,39 +696,13 @@ while running:
         player_screen_pos = camera.apply(player_pos)
         player_draw_rect = player.get_rect(center=player_screen_pos)
         render_surface.blit(player, player_draw_rect)
-        
-        if lighting_enabled:
-            # Fill the game with darkness
-            darkness_surface.fill(darkness_colour)
-
-            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
-            max_radius = 250  # The outermost edge of the light
-            step = 6  
-
-            for radius in range(max_radius, 0, -step): # Much fewer iterations now
-                # Calculate brightness for the current ring
-                light_intensity = 3
-                normalized_radius = radius / max_radius
-                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
-
-                # Ensure brightness stays within the valid range of 0 and 255
-                brightness = max(0, min(255, brightness))
-
-                # RBG of the light
-                light_color = (brightness, brightness, brightness)
-
-                # Draw the circle for this ring of light onto our light map.
-                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
-
-            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
         # Draw the collision rectangles in a way that they do move with the camera, but stay fixed to the map
         for rect in collision_rects:
             cam_rect = rect.copy()
             cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
-            pygame.draw.rect(render_surface, 'red', cam_rect, -1)
-
-
+            pygame.draw.rect(render_surface, 'red', cam_rect, 2)
+            
         to_remove = []
         deads = []
         for enemy in enemies:
@@ -746,6 +740,17 @@ while running:
                         enemy_proj_rect = enemy_proj_image.get_rect(center = enemy_pos)
                         enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
                         enemy["last_shot"] = current_time
+
+                enemy_moving = True
+                for rect in collision_rects:
+                    if enemy["rect"].colliderect(rect):
+                        enemy_moving = False
+
+                if not enemy_moving:
+                    enemy_vel = 0
+
+                elif enemy_moving:
+                    enemy_vel = 100
 
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
@@ -843,11 +848,19 @@ while running:
                 # Ensure brightness stays within the valid range of 0 and 255
                 brightness = max(0, min(255, brightness))
 
-                # RBG of the light
+                # RGB of the light
                 light_color = (brightness, brightness, brightness)
-
+                
                 # Draw the circle for this ring of light onto our light map.
                 pygame.draw.circle(darkness_surface, light_color, light_center, radius)
+
+                #if len(enemies) == 0 and interacted_with_npc:
+                temp_rect = pygame.Rect(0, 0, 0, 0)
+                temp_rect.center = (portal_rect.centerx - 13, portal_rect.centery - 10)
+                portal_center_screen = camera.apply(temp_rect)
+                pygame.draw.circle(darkness_surface, light_color, portal_center_screen, 90)
+
+
 
             render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
@@ -878,8 +891,6 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
-
-    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
