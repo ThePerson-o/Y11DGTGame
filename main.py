@@ -244,11 +244,11 @@ interaction_distance = 100  # How close the player needs to be to interact
 
 # Placeholder dialogue for the NPC in a dictionary
 npc_dialogue = [
-    {"speaker": "NPC", "text": "Hello there, traveler! Welcome to our village."}, # Format: "speaker", "text" 
-    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to be prepared."},
-    {"speaker": "NPC", "text": "Take this advice: always watch your back in the dark forest."},
-    {"speaker": "Player", "text": "Thank you for the warning. I'll be careful."},
-    {"speaker": "NPC", "text": "Good luck on your adventure!"}
+    {"speaker": "NPC", "text": "Hello there, little spirit. Welcome to the afterlife!"}, # Format: "speaker", "text" 
+    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to face off against evil spirits to reach your whanau."},
+    {"speaker": "NPC", "text": "Use WASD to move and click to shoot!"},
+    {"speaker": "Player", "text": "Thank you for advice."},
+    {"speaker": "NPC", "text": "Good luck on your journey!"}
 ]
 
 # Dialogue box settings
@@ -878,8 +878,6 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
-
-    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
