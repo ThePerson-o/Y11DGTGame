@@ -516,7 +516,7 @@ while running:
         if game_state == "menu":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # Get the play button rect from draw_menu
-                play_button = draw_menu()  # This will be called again below, but we need the rect
+                play_button = draw_menu()  
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(mouse_pos):
                     game_state = "playing"
