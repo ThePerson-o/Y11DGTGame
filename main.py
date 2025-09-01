@@ -19,7 +19,11 @@ end_colour = (80, 80, 120)
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
 trumpet.set_volume(0.3)
 water_drip = pygame.mixer.Sound("water_drip.mp3")
-insane_guitar = pygame.mixer.Sound("insane_guitar.mp3")
+soundtrack_1 = pygame.mixer.Sound("soundtrack 1.mp3")
+soundtrack_2 = pygame.mixer.Sound("soundtrack 2.mp3")
+soundtrack_1.set_volume(0.2)
+soundtrack_2.set_volume(0.2)
+
 
 ZOOM = 1.2  # zoom level 
 
@@ -29,7 +33,7 @@ CAMERA_MARGIN_Y = 80
 
 # Game Menu 
 game_state = "menu"
-game_over_time = 0
+selected_level = None  # Store the selected level
 
 # Timer variables
 game_start_time = 0
@@ -90,22 +94,44 @@ def draw_menu():
     button_height = 80
     button_x = (WINDOW_WIDTH - button_width) // 2
     button_y = WINDOW_HEIGHT // 2
-    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-    
-    # Check if mouse is hovering over button
+    play_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
     mouse_pos = pygame.mouse.get_pos()
-    is_hovering = button_rect.collidepoint(mouse_pos)
-    
-    # Draw button with hover effect
-    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
-    border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
-    
-    pygame.draw.rect(screen, button_color, button_rect)
-    pygame.draw.rect(screen, border_color, button_rect, 3)
-    
-    # Center the text on the button
-    text_rect = button_text.get_rect(center=button_rect.center)
+    is_hovering_play = play_button_rect.collidepoint(mouse_pos)
+    button_color_play = (70, 130, 180) if is_hovering_play else (40, 80, 140)
+    border_color_play = (100, 150, 200) if is_hovering_play else (80, 80, 120)
+    pygame.draw.rect(screen, button_color_play, play_button_rect)
+    pygame.draw.rect(screen, border_color_play, play_button_rect, 3)
+    text_rect = button_text.get_rect(center=play_button_rect.center)
     screen.blit(button_text, text_rect)
+
+    # Settings button below Play button
+    settings_button_width = 250
+    settings_button_height = 80
+    settings_button_x = button_x - 25
+    settings_button_y = button_y + button_height + 30  # 30px below Play button
+    settings_button_rect = pygame.Rect(settings_button_x, settings_button_y, settings_button_width, settings_button_height)
+    is_hovering_settings = settings_button_rect.collidepoint(mouse_pos)
+    button_color_settings = (70, 130, 180) if is_hovering_settings else (40, 80, 140)
+    border_color_settings = (100, 150, 200) if is_hovering_settings else (80, 80, 120)
+    pygame.draw.rect(screen, button_color_settings, settings_button_rect)
+    pygame.draw.rect(screen, border_color_settings, settings_button_rect, 3)
+
+    # Settings icon (left side of button)
+    settings_icon = pygame.image.load("setting.png")
+    icon_width, icon_height = settings_icon.get_size()
+    shrunk_size = (int(icon_width * 0.1), int(icon_height * 0.1))
+    settings_icon = pygame.transform.smoothscale(settings_icon, shrunk_size)
+    icon_rect = settings_icon.get_rect()
+    icon_rect.centery = settings_button_rect.centery
+    icon_rect.left = settings_button_rect.left + 10
+    screen.blit(settings_icon, icon_rect)
+
+    # Settings text (right of icon, centered vertically)
+    settings_text = button_font.render("Settings", True, (255, 255, 255))
+    settings_text_rect = settings_text.get_rect()
+    settings_text_rect.centery = settings_button_rect.centery
+    settings_text_rect.left = icon_rect.right + 10
+    screen.blit(settings_text, settings_text_rect)
 
     # Instructions
     instruction_font = pygame.font.Font(None, 30)
@@ -113,7 +139,7 @@ def draw_menu():
     instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
     screen.blit(instruction_text, instruction_rect)
     
-    return button_rect
+    return play_button_rect, settings_button_rect
 
 def game_over():
     game_over_font = pygame.font.Font(None, 80)
@@ -185,6 +211,7 @@ portal_img = pygame.transform.scale(portal_img, (120, 120))
 portal_rect = pygame.Rect(730, 1100, 150, 150)
 
 enemies = []
+enemy_projectiles = []
 enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (60, 60))
 enemy_vel = 100
@@ -235,6 +262,7 @@ def spawn_hearts():
         create_heart(pos)
 
 spawn_hearts()
+
 
 # NPC Dialogue
 dialogue_font = pygame.font.Font(None, 24)  # Font for dialogue text
@@ -502,24 +530,133 @@ def draw_dialogue_box(surface, speaker, text):
     indicator_y = box_y + dialogue_box_height - 30
     surface.blit(indicator_surface, (indicator_x, indicator_y))
 
+def draw_level_selector():
+    """Draw the level selection menu and return a list of level button rects and the back button rect"""
+    screen.blit(get_menu_background(), (0, 0))
+
+    # Title
+    title_font = pygame.font.Font(None, 80)
+    title_text = title_font.render("Select Level", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 - 100))
+    screen.blit(title_text, title_rect) 
+
+    # 3 levels
+    levels = ["Level 1", "Level 2", "Level 3"]
+    button_font = pygame.font.Font(None, 60)
+    button_width = 300
+    button_height = 80
+    button_spacing = 40
+    buttons = []
+    start_y = WINDOW_HEIGHT // 2  - ((button_height + button_spacing) * len(levels)) // 2
+
+    mouse_pos = pygame.mouse.get_pos()  # Get mouse position once here
+
+    for i, level_name in enumerate(levels):
+        button_x = (WINDOW_WIDTH - button_width) // 2
+        button_y = start_y + i * (button_height + button_spacing)
+        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        is_hovering = button_rect.collidepoint(mouse_pos)
+        button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
+        border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
+        pygame.draw.rect(screen, button_color, button_rect)
+        pygame.draw.rect(screen, border_color, button_rect, 3)
+        text_surface = button_font.render(level_name, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=button_rect.center)
+        screen.blit(text_surface, text_rect)
+        buttons.append((button_rect, level_name))
+
+    # Back button
+    back_button_font = pygame.font.Font(None, 50)
+    back_text = back_button_font.render("Back", True, (255, 255, 255))
+    back_button_width = 180
+    back_button_height = 60
+    back_button_x = (WINDOW_WIDTH - back_button_width) // 2
+    back_button_y = start_y + len(levels) * (button_height + button_spacing) + 20
+    back_button_rect = pygame.Rect(back_button_x, back_button_y, back_button_width, back_button_height)
+    is_hovering_back = back_button_rect.collidepoint(mouse_pos)
+    back_button_color = (70, 130, 180) if is_hovering_back else (40, 80, 140)
+    back_border_color = (100, 150, 200) if is_hovering_back else (80, 80, 120)
+    pygame.draw.rect(screen, back_button_color, back_button_rect)
+    pygame.draw.rect(screen, back_border_color, back_button_rect, 3)
+    back_text_rect = back_text.get_rect(center=back_button_rect.center)
+    screen.blit(back_text, back_text_rect)
+
+    return buttons, back_button_rect
+
+# Settings menu variables
+sound_enabled = True  
+
+def draw_settings_menu():
+    """Draw the settings menu and return the sound toggle button rect"""
+    screen.blit(get_menu_background(), (0, 0)) 
+
+    # Title
+    title_font = pygame.font.Font(None, 80)
+    title_text = title_font.render("Settings", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4))
+    screen.blit(title_text, title_rect)
+
+    # Sound toggle button
+    button_font = pygame.font.Font(None, 60)
+    button_width = 300
+    button_height = 80
+    button_x = (WINDOW_WIDTH - button_width) // 2
+    button_y = WINDOW_HEIGHT // 2
+
+    sound_text = "Sound: ON" if sound_enabled else "Sound: OFF"
+    sound_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    mouse_pos = pygame.mouse.get_pos()
+    is_hovering = sound_button_rect.collidepoint(mouse_pos)
+    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
+    border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
+    pygame.draw.rect(screen, button_color, sound_button_rect)
+    pygame.draw.rect(screen, border_color, sound_button_rect, 3)
+    text_surface = button_font.render(sound_text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect(center=sound_button_rect.center)
+    screen.blit(text_surface, text_rect)
+
+    # Back button
+    back_button_font = pygame.font.Font(None, 50)
+    back_text = back_button_font.render("Back", True, (255, 255, 255))
+    back_button_width = 180
+    back_button_height = 60
+    back_button_x = (WINDOW_WIDTH - back_button_width) // 2
+    back_button_y = button_y + button_height + 40
+    back_button_rect = pygame.Rect(back_button_x, back_button_y, back_button_width, back_button_height)
+    is_hovering_back = back_button_rect.collidepoint(mouse_pos)
+    back_button_color = (70, 130, 180) if is_hovering_back else (40, 80, 140)
+    back_border_color = (100, 150, 200) if is_hovering_back else (80, 80, 120)
+    pygame.draw.rect(screen, back_button_color, back_button_rect)
+    pygame.draw.rect(screen, back_border_color, back_button_rect, 3)
+    back_text_rect = back_text.get_rect(center=back_button_rect.center)
+    screen.blit(back_text, back_text_rect)
+
+    return sound_button_rect, back_button_rect
+
 # Main loop
 running = True
+play_button_rect, settings_button_rect = None, None
+level_buttons, back_button_rect = None, None
+sound_button_rect, settings_back_button_rect = None, None
 while running:
     dt = clock.tick(60) / 1000
-    
+    # Draw screen and cache button rects before event handling
+    if game_state == "menu":
+        play_button_rect, settings_button_rect = draw_menu()
+    elif game_state == "level_select":
+        level_buttons, back_button_rect = draw_level_selector()
+    elif game_state == "settings":
+        sound_button_rect, settings_back_button_rect = draw_settings_menu()
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
         # Menu interactions
         if game_state == "menu":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Get the play button rect from draw_menu
-                play_button = draw_menu()  
                 mouse_pos = pygame.mouse.get_pos()
-                if play_button.collidepoint(mouse_pos):
-                    game_state = "playing"
+                if play_button_rect and play_button_rect.collidepoint(mouse_pos):
+                    game_state = "level_select"
                     player_lives = 3
                     interacted_with_npc = False
                     level_1_spawned = False
@@ -527,7 +664,43 @@ while running:
                     player_pos = pygame.Vector2(1150, 950)
                     player_rect.center = player_pos
                     trumpet.play()
-                    game_start_time = pygame.time.get_ticks()  # Record when game started
+                if settings_button_rect and settings_button_rect.collidepoint(mouse_pos):
+                    game_state = "settings"
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False  # Exit game from main menu
+        # Settings interactions
+        elif game_state == "settings":
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_pos = pygame.mouse.get_pos()
+                if sound_button_rect and sound_button_rect.collidepoint(mouse_pos):
+                    sound_enabled = not sound_enabled
+                    # Set sound volume accordingly
+                    trumpet.set_volume(0.3 if sound_enabled else 0.0)
+                    water_drip.set_volume(1.0 if sound_enabled else 0.0)
+                    soundtrack_1.set_volume(0.5 if sound_enabled else 0.0)
+                    soundtrack_2.set_volume(0.5 if sound_enabled else 0.0)
+                if settings_back_button_rect and settings_back_button_rect.collidepoint(mouse_pos):
+                    game_state = "menu"
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                game_state = "menu"
+        # Level selector interactions
+        elif game_state == "level_select":
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_pos = pygame.mouse.get_pos()
+                for button_rect, level_name in level_buttons or []:
+                    if button_rect.collidepoint(mouse_pos):
+                        if level_name == "Level 1":
+                            selected_level = level_name
+                            game_state = "playing"
+                            game_start_time = pygame.time.get_ticks()
+                            # Play soundtrack 2 (one loop, then repeat)
+                            soundtrack_2.stop()
+                            soundtrack_2.play(loops=0)
+                        # Level 2 and Level 3 do nothing for now
+                if back_button_rect and back_button_rect.collidepoint(mouse_pos):
+                    game_state = "menu"
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                game_state = "menu"  # Go back to main menu from level select
 
         # Game interactions (only when playing)
         elif game_state == "playing":
@@ -641,7 +814,7 @@ while running:
 
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
-            exit() # Return to menu instead of exiting
+            exit()
 
         # update player rectangle position to player position - Riley
         player_rect.center = player_pos
@@ -710,6 +883,7 @@ while running:
 
 
         to_remove = []
+        moving = []
         deads = []
         for enemy in enemies:
             enemy_screen_pos = camera.apply(pygame.Vector2(enemy["rect"].topleft))
@@ -805,7 +979,6 @@ while running:
 
         if interacted_with_npc:
             if not level_1_spawned:
-                insane_guitar.play()
                 level_1()
                 level_1_spawned = True
 
@@ -878,6 +1051,11 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
+
+    # Check if soundtrack_1 finished and repeat if needed
+    if selected_level == "Level 1":
+        if not pygame.mixer.get_busy():
+            soundtrack_2.play(loops=0)
 
     # Update display
     pygame.display.flip()
