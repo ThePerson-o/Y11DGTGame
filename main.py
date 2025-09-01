@@ -628,7 +628,7 @@ while running:
         # Simple collision detection for vertical movement (no optimization)
         for rect in collision_rects:
             if player_rect.colliderect(rect):
-                if rect == pygame.Rect(755, 1160, 60, 2):
+                if rect == pygame.Rect(755, 1160, 60, 2) and not in_level_2:
                     level_2()
 
                 player_pos.y = old_y
