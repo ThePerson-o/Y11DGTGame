@@ -653,6 +653,7 @@ while running:
             running = False
         # Menu interactions
         if game_state == "menu":
+            soundtrack_2.stop()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button_rect and play_button_rect.collidepoint(mouse_pos):
@@ -670,6 +671,7 @@ while running:
                 running = False  # Exit game from main menu
         # Settings interactions
         elif game_state == "settings":
+            soundtrack_2.stop()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
                 if sound_button_rect and sound_button_rect.collidepoint(mouse_pos):
@@ -685,6 +687,7 @@ while running:
                 game_state = "menu"
         # Level selector interactions
         elif game_state == "level_select":
+            soundtrack_2.stop()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
                 for button_rect, level_name in level_buttons or []:
