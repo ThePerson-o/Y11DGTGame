@@ -629,7 +629,8 @@ while running:
         for rect in collision_rects:
             if player_rect.colliderect(rect):
                 if rect == pygame.Rect(755, 1160, 60, 2) and not in_level_2:
-                    level_2()
+                    if len(enemies) == 0 and interacted_with_npc:
+                        level_2()
 
                 player_pos.y = old_y
                 player_rect.center = player_pos
@@ -858,7 +859,9 @@ while running:
                 temp_rect = pygame.Rect(0, 0, 0, 0)
                 temp_rect.center = (portal_rect.centerx - 13, portal_rect.centery - 10)
                 portal_center_screen = camera.apply(temp_rect)
-                pygame.draw.circle(darkness_surface, light_color, portal_center_screen, 90)
+
+                if len(enemies) == 0 and interacted_with_npc:
+                    pygame.draw.circle(darkness_surface, light_color, portal_center_screen, 90)
 
 
 
