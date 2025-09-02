@@ -914,6 +914,8 @@ while running:
                              npc_screen_pos.y - 50)
                 render_surface.blit(prompt_text, prompt_pos)
 
+    # (Hint rendering moved later so it isn't affected by darkness)
+
         portal_rect2 = portal_rect.copy()
         portal_rect2.topleft = camera.apply(pygame.Vector2(portal_rect2.topleft))
         render_surface.blit(portal_img, portal_rect2.topleft)
@@ -922,6 +924,12 @@ while running:
         player_screen_pos = camera.apply(player_pos)
         player_draw_rect = player.get_rect(center=player_screen_pos)
         render_surface.blit(player, player_draw_rect)
+
+        # Blit darkness surface on top of render_surface
+        screen.blit(render_surface, (0, 0))
+        screen.blit(darkness_surface, (0, 0))
+
+    # (Hint rendering moved later so it isn't affected by darkness)
         
         if lighting_enabled:
             # Fill the game with darkness
@@ -1130,6 +1138,21 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
+
+        # Draw hint on the very top layer so darkness does not obscure it
+        if not interacted_with_npc and not dialogue_active:
+            if language == "en":
+                hint_str = "Hint: Talk to the NPC to begin your journey!"
+            elif language == "mi":
+                hint_str = "Tohuto: Kōrero ki te NPC hei tīmata i tō haerenga!"
+            else:
+                hint_str = "Hint: Talk to the NPC to begin your journey!"
+            hint_font = pygame.font.Font(None, 32)
+            hint_text = hint_font.render(hint_str, True, (255, 255, 0))
+            hint_bg = pygame.Surface((hint_text.get_width() + 20, hint_text.get_height() + 10), pygame.SRCALPHA)
+            hint_bg.fill((0, 0, 0, 180))
+            screen.blit(hint_bg, ((WINDOW_WIDTH - hint_bg.get_width()) // 2, 20))
+            screen.blit(hint_text, ((WINDOW_WIDTH - hint_text.get_width()) // 2, 25))
 
     # Check if soundtrack_1 finished and repeat if needed
     if selected_level == "Level 1":
