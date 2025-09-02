@@ -3,6 +3,8 @@ import sys
 import os
 import pickle as p
 import random
+from googletrans import Translator
+
 
 # Start pygame
 pygame.init()
@@ -25,11 +27,14 @@ soundtrack_1.set_volume(0.2)
 soundtrack_2.set_volume(0.2)
 
 
-ZOOM = 1.2  # zoom level 
+# Language
+translator = Translator()
+language = "en"
 
 # Camera dead zone - Alex
 CAMERA_MARGIN_X = 120
 CAMERA_MARGIN_Y = 80
+ZOOM = 1.2  # zoom level 
 
 # Game Menu 
 game_state = "menu"
@@ -60,7 +65,6 @@ def create_menu_background(w, h):
 
 menu_background = None
 menu_bg_size = (0, 0)
-
 def get_menu_background():
     global menu_background, menu_bg_size
     current_size = (WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -76,19 +80,27 @@ def draw_menu():
 
     # Game title
     title_font = pygame.font.Font(None, 100)
-    title_text = title_font.render("Dark to Light", True, (255, 255, 255))
+    if language == "en":
+        title_text = title_font.render("Dark to Light", True, (255, 255, 255))
+    elif language == "mi":
+        title_text = title_font.render("whēuriuri ko tūrama", True, (255, 255, 255))
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
     title_center_pos = (WINDOW_WIDTH // 2 , WINDOW_HEIGHT // 2)
   
     # Draw shadow first
-    shadow_title = title_font.render("Dark to Light", True, (50, 50, 50))
+    if language == "en":
+        shadow_title = title_font.render("Dark to Light", True, (50, 50, 50))
+    elif language == "mi":
+        shadow_title = title_font.render("whēuriuri ko tūrama", True, (50, 50, 50))
     screen.blit(shadow_title, (title_rect.x + 3, title_rect.y + 3))
     screen.blit(title_text, title_rect)
     
     # Play button
-    button_font = pygame.font.Font(None, 60)
-    button_text = button_font.render("Play", True, (255, 255, 255))
-    
+    button_font = pygame.font.Font(None, 60) 
+    if language == "en":
+        button_text = button_font.render("Play", True, (255, 255, 255))
+    elif language == "mi":
+        button_text = button_font.render("Kori", True, (255, 255, 255))
     # Button rectangle
     button_width = 200
     button_height = 80
@@ -105,9 +117,13 @@ def draw_menu():
     screen.blit(button_text, text_rect)
 
     # Settings button below Play button
-    settings_button_width = 250
+    if language == "mi":
+        settings_button_width = 350  
+        settings_button_x = button_x - 60  
+    else:
+        settings_button_width = 250
+        settings_button_x = button_x - 25
     settings_button_height = 80
-    settings_button_x = button_x - 25
     settings_button_y = button_y + button_height + 30  # 30px below Play button
     settings_button_rect = pygame.Rect(settings_button_x, settings_button_y, settings_button_width, settings_button_height)
     is_hovering_settings = settings_button_rect.collidepoint(mouse_pos)
@@ -127,16 +143,22 @@ def draw_menu():
     screen.blit(settings_icon, icon_rect)
 
     # Settings text (right of icon, centered vertically)
-    settings_text = button_font.render("Settings", True, (255, 255, 255))
+    if language == "en":
+        settings_text = button_font.render("Settings", True, (255, 255, 255))
+    elif language == "mi":
+        settings_text = button_font.render("Kōwhiringa", True, (255, 255, 255))
     settings_text_rect = settings_text.get_rect()
-    settings_text_rect.centery = settings_button_rect.centery
+    settings_text_rect.centery = settings_button_rect.centery 
     settings_text_rect.left = icon_rect.right + 10
     screen.blit(settings_text, settings_text_rect)
-
     # Instructions
     instruction_font = pygame.font.Font(None, 30)
-    instruction_text = instruction_font.render("Click Play to start your adventure!", True, (200, 200, 200))
-    instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
+    if language == "en":
+        instruction_text = instruction_font.render("Click Play to start your adventure!", True, (200, 200, 200))
+        instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
+    elif language == "mi":
+        instruction_text = instruction_font.render("Pāwhiritia te Tākaro hei tīmata i tō mōrearea!", True, (200, 200, 200))
+        instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
     screen.blit(instruction_text, instruction_rect)
     
     return play_button_rect, settings_button_rect
@@ -152,17 +174,6 @@ def game_over():
     screen.blit(game_over_txt, game_over_rect)
     pygame.init()
 
-# Map settings - Alex
-TILE_SIZE = 40 # Sets the size of each tile
-MAP_COLS = WINDOW_WIDTH // TILE_SIZE 
-MAP_ROWS = WINDOW_HEIGHT // TILE_SIZE
-# 0 = empty, 1 = wall 
-game_map = [] # Creates an empty list to store the map rows
-for row in range(MAP_ROWS): # Loop every "Map Row"
-    if row == 0 or row == MAP_ROWS - 1: # If it's the first or last row
-        game_map.append([1] * MAP_COLS) # Fill the whole row with walls (1)
-    else:
-        game_map.append([1] + [0] * (MAP_COLS - 2) + [1]) # All other rows are empty (0)
 
 # Create window BEFORE loading images to reduce gap in performance
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
@@ -277,6 +288,14 @@ npc_dialogue = [
     {"speaker": "NPC", "text": "Use WASD to move and click to shoot!"},
     {"speaker": "Player", "text": "Thank you for advice."},
     {"speaker": "NPC", "text": "Good luck on your journey!"}
+]
+
+maori_npc_dialogue = [
+    {"speaker": "NPC", "text": "Kia ora e te wairua iti. Nau mai ki te ao o muri!"}, # Format: "speaker", "text" 
+    {"speaker": "NPC", "text": "He kino te haerenga kei mua. Me whawhai koe ki nga wairua kino kia tae atu ki to whanau."},
+    {"speaker": "NPC", "text": "Whakamahia te WASD ki te neke ka paato ki te kopere!"},
+    {"speaker": "Kaiwhakatangi", "text": "Mauruuru koe mo te tohutohu."},
+    {"speaker": "NPC", "text": "Kia pai to haerenga!"}
 ]
 
 # Dialogue box settings
@@ -524,7 +543,10 @@ def draw_dialogue_box(surface, speaker, text):
         y_offset += 25
     
     # Draw continue indicator
-    indicator_text = "Click to continue..." if dialogue_index < len(npc_dialogue) - 1 else "Click to close" # Detects if its the last line. If not, then display "Click to continue...", if it is display "Click to close"
+    if language == "en":
+        indicator_text = "Click to continue..." if dialogue_index < len(npc_dialogue) - 1 else "Click to close" # Detects if its the last line. If not, then display "Click to continue...", if it is display "Click to close"
+    elif language == "mi": 
+        indicator_text = "Pāwhiri ko tonu..." if dialogue_index < len(npc_dialogue) - 1 else "Pāwhiri ko kati"
     indicator_surface = dialogue_font.render(indicator_text, True, (150, 150, 150))
     indicator_x = box_x + dialogue_box_width - indicator_surface.get_width() - dialogue_padding
     indicator_y = box_y + dialogue_box_height - 30
@@ -536,12 +558,20 @@ def draw_level_selector():
 
     # Title
     title_font = pygame.font.Font(None, 80)
-    title_text = title_font.render("Select Level", True, (255, 255, 255))
+    if language == "en":
+        title_text = title_font.render("Select Level", True, (255, 255, 255))
+    elif language == "mi":
+        title_text = title_font.render("Tīpakohia te Taumata", True, (255, 255, 255))
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 - 100))
     screen.blit(title_text, title_rect) 
 
     # 3 levels
-    levels = ["Level 1", "Level 2", "Level 3"]
+    if language == "en":
+        levels = ["Level 1", "Level 2", "Level 3"]
+    elif language == "mi":
+        levels = ["Taumata 1", "Taumata 2", "Taumata 3"]
+    else:
+        levels = ["Level 1", "Level 2", "Level 3"]
     button_font = pygame.font.Font(None, 60)
     button_width = 300
     button_height = 80
@@ -567,8 +597,12 @@ def draw_level_selector():
 
     # Back button
     back_button_font = pygame.font.Font(None, 50)
-    back_text = back_button_font.render("Back", True, (255, 255, 255))
-    back_button_width = 180
+    if language == "en":
+        back_text = back_button_font.render("Back", True, (255, 255, 255))
+        back_button_width = 180
+    elif language == "mi":
+        back_text = back_button_font.render("Whakahoki", True, (255, 255, 255))
+        back_button_width = 200
     back_button_height = 60
     back_button_x = (WINDOW_WIDTH - back_button_width) // 2
     back_button_y = start_y + len(levels) * (button_height + button_spacing) + 20
@@ -587,25 +621,52 @@ def draw_level_selector():
 sound_enabled = True  
 
 def draw_settings_menu():
-    """Draw the settings menu and return the sound toggle button rect"""
+    """Draw the settings menu and return the sound toggle button rect, as well as the language toggle rect"""
     screen.blit(get_menu_background(), (0, 0)) 
 
     # Title
     title_font = pygame.font.Font(None, 80)
-    title_text = title_font.render("Settings", True, (255, 255, 255))
+    if language == "en":
+        title_text = title_font.render("Settings", True, (255, 255, 255))
+    elif language == "mi":
+        title_text = title_font.render("Kōwhiringa", True, (255, 255, 255))
     title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4))
     screen.blit(title_text, title_rect)
 
-    # Sound toggle button
+    # Language toggle button
     button_font = pygame.font.Font(None, 60)
-    button_width = 300
+    sound_button_width = 300
+    sound_button_width_mi = 320
+    lang_button_width = 500
     button_height = 80
-    button_x = (WINDOW_WIDTH - button_width) // 2
-    button_y = WINDOW_HEIGHT // 2
-
-    sound_text = "Sound: ON" if sound_enabled else "Sound: OFF"
-    sound_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    button_x = (WINDOW_WIDTH - sound_button_width) // 2
+    lang_button_y = WINDOW_HEIGHT // 2 - button_height - 30
+    if language == "en":
+        lang_text = "Language: English"
+    elif language == "mi":
+        lang_text = "Language: Te Reo Māori"
+    else:
+        lang_text = f"Language: {language}"
+    lang_button_rect = pygame.Rect(button_x - 100, lang_button_y, lang_button_width, button_height)
     mouse_pos = pygame.mouse.get_pos()
+    is_hovering_lang = lang_button_rect.collidepoint(mouse_pos)
+    lang_button_color = (70, 130, 180) if is_hovering_lang else (40, 80, 140)
+    lang_border_color = (100, 150, 200) if is_hovering_lang else (80, 80, 120)
+    pygame.draw.rect(screen, lang_button_color, lang_button_rect)
+    pygame.draw.rect(screen, lang_border_color, lang_button_rect, 3)
+    lang_text_surface = button_font.render(lang_text, True, (255, 255, 255))
+    lang_text_rect = lang_text_surface.get_rect(center=lang_button_rect.center)
+    screen.blit(lang_text_surface, lang_text_rect)
+
+    # Sound toggle button
+    sound_button_y = WINDOW_HEIGHT // 2
+    if language == "en":    
+        sound_text = "Sound: ON" if sound_enabled else "Sound: OFF"
+        sound_button_rect = pygame.Rect(button_x, sound_button_y, sound_button_width, button_height)
+    elif language == "mi":
+        sound_text = "Hīrea: Whakakā" if sound_enabled else "Hīrea: Whakaweto"
+        sound_button_rect = pygame.Rect(button_x, sound_button_y, sound_button_width_mi, button_height)
+    
     is_hovering = sound_button_rect.collidepoint(mouse_pos)
     button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
     border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
@@ -617,11 +678,15 @@ def draw_settings_menu():
 
     # Back button
     back_button_font = pygame.font.Font(None, 50)
-    back_text = back_button_font.render("Back", True, (255, 255, 255))
-    back_button_width = 180
+    if language == "en":
+        back_text = back_button_font.render("Back", True, (255, 255, 255))
+        back_button_width = 180
+    elif language  == "mi":
+        back_text = back_button_font.render("Whakahoki",  True, (255, 255, 255))
+        back_button_width = 200
     back_button_height = 60
     back_button_x = (WINDOW_WIDTH - back_button_width) // 2
-    back_button_y = button_y + button_height + 40
+    back_button_y = sound_button_y + button_height + 40
     back_button_rect = pygame.Rect(back_button_x, back_button_y, back_button_width, back_button_height)
     is_hovering_back = back_button_rect.collidepoint(mouse_pos)
     back_button_color = (70, 130, 180) if is_hovering_back else (40, 80, 140)
@@ -631,7 +696,7 @@ def draw_settings_menu():
     back_text_rect = back_text.get_rect(center=back_button_rect.center)
     screen.blit(back_text, back_text_rect)
 
-    return sound_button_rect, back_button_rect
+    return lang_button_rect, sound_button_rect, back_button_rect
 
 # Main loop
 running = True
@@ -646,7 +711,7 @@ while running:
     elif game_state == "level_select":
         level_buttons, back_button_rect = draw_level_selector()
     elif game_state == "settings":
-        sound_button_rect, settings_back_button_rect = draw_settings_menu()
+        lang_button_rect, sound_button_rect, settings_back_button_rect = draw_settings_menu()
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -674,6 +739,8 @@ while running:
             soundtrack_2.stop()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
+                if lang_button_rect and lang_button_rect.collidepoint(mouse_pos):
+                    language = "mi" if language == "en" else "en"
                 if sound_button_rect and sound_button_rect.collidepoint(mouse_pos):
                     sound_enabled = not sound_enabled
                     # Set sound volume accordingly
@@ -692,7 +759,7 @@ while running:
                 mouse_pos = pygame.mouse.get_pos()
                 for button_rect, level_name in level_buttons or []:
                     if button_rect.collidepoint(mouse_pos):
-                        if level_name == "Level 1":
+                        if (language == "en" and level_name == "Level 1") or (language == "mi" and level_name == "Taumata 1"):
                             selected_level = level_name
                             game_state = "playing"
                             game_start_time = pygame.time.get_ticks()
@@ -839,7 +906,10 @@ while running:
         if not dialogue_active and not interacted_with_npc:
             distance = player_pos.distance_to(npc_pos)
             if distance <= interaction_distance:
-                prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
+                if language == "en":
+                    prompt_text = dialogue_font.render("Press E to talk", True, (255, 255, 255))
+                elif language == "mi":
+                    prompt_text = dialogue_font.render("Perehi E ko kōrerorero", True, (255, 255, 255))
                 prompt_pos = (npc_screen_pos.x - prompt_text.get_width() // 2, 
                              npc_screen_pos.y - 50)
                 render_surface.blit(prompt_text, prompt_pos)
@@ -1032,13 +1102,20 @@ while running:
 
         # Draw dialogue box on top of everything (if active)
         if dialogue_active:
-            current_dialogue = npc_dialogue[dialogue_index]
-            draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
-        
+            if language == "en":
+                current_dialogue = npc_dialogue[dialogue_index]
+                draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
+            elif language == "mi":
+                current_dialogue = maori_npc_dialogue[dialogue_index]
+                draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
+
         # Draw timer on top left (always visible during gameplay)
         current_time = pygame.time.get_ticks()
         elapsed_seconds = (current_time - game_start_time) // 1000
-        timer_text = timer_font.render(f"Timer: {elapsed_seconds}s", True, (255, 255, 255))
+        if language == "en":
+            timer_text = timer_font.render(f"Timer: {elapsed_seconds}s", True, (255, 255, 255))
+        elif language == "mi": 
+            timer_text = timer_font.render(f"Tāima: {elapsed_seconds}s", True, (255, 255, 255))
         
         # semi-transparent background for better readability
         timer_bg = pygame.Surface((timer_text.get_width() + 20, timer_text.get_height() + 10))
