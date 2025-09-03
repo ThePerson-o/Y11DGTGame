@@ -2,7 +2,6 @@ import pygame
 import sys
 import os
 import pickle as p
-import random
 
 # Start pygame
 pygame.init()
@@ -94,44 +93,22 @@ def draw_menu():
     button_height = 80
     button_x = (WINDOW_WIDTH - button_width) // 2
     button_y = WINDOW_HEIGHT // 2
-    play_button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    
+    # Check if mouse is hovering over button
     mouse_pos = pygame.mouse.get_pos()
-    is_hovering_play = play_button_rect.collidepoint(mouse_pos)
-    button_color_play = (70, 130, 180) if is_hovering_play else (40, 80, 140)
-    border_color_play = (100, 150, 200) if is_hovering_play else (80, 80, 120)
-    pygame.draw.rect(screen, button_color_play, play_button_rect)
-    pygame.draw.rect(screen, border_color_play, play_button_rect, 3)
-    text_rect = button_text.get_rect(center=play_button_rect.center)
+    is_hovering = button_rect.collidepoint(mouse_pos)
+    
+    # Draw button with hover effect
+    button_color = (70, 130, 180) if is_hovering else (40, 80, 140)
+    border_color = (100, 150, 200) if is_hovering else (80, 80, 120)
+    
+    pygame.draw.rect(screen, button_color, button_rect)
+    pygame.draw.rect(screen, border_color, button_rect, 3)
+    
+    # Center the text on the button
+    text_rect = button_text.get_rect(center=button_rect.center)
     screen.blit(button_text, text_rect)
-
-    # Settings button below Play button
-    settings_button_width = 250
-    settings_button_height = 80
-    settings_button_x = button_x - 25
-    settings_button_y = button_y + button_height + 30  # 30px below Play button
-    settings_button_rect = pygame.Rect(settings_button_x, settings_button_y, settings_button_width, settings_button_height)
-    is_hovering_settings = settings_button_rect.collidepoint(mouse_pos)
-    button_color_settings = (70, 130, 180) if is_hovering_settings else (40, 80, 140)
-    border_color_settings = (100, 150, 200) if is_hovering_settings else (80, 80, 120)
-    pygame.draw.rect(screen, button_color_settings, settings_button_rect)
-    pygame.draw.rect(screen, border_color_settings, settings_button_rect, 3)
-
-    # Settings icon (left side of button)
-    settings_icon = pygame.image.load("setting.png")
-    icon_width, icon_height = settings_icon.get_size()
-    shrunk_size = (int(icon_width * 0.1), int(icon_height * 0.1))
-    settings_icon = pygame.transform.smoothscale(settings_icon, shrunk_size)
-    icon_rect = settings_icon.get_rect()
-    icon_rect.centery = settings_button_rect.centery
-    icon_rect.left = settings_button_rect.left + 10
-    screen.blit(settings_icon, icon_rect)
-
-    # Settings text (right of icon, centered vertically)
-    settings_text = button_font.render("Settings", True, (255, 255, 255))
-    settings_text_rect = settings_text.get_rect()
-    settings_text_rect.centery = settings_button_rect.centery
-    settings_text_rect.left = icon_rect.right + 10
-    screen.blit(settings_text, settings_text_rect)
 
     # Instructions
     instruction_font = pygame.font.Font(None, 30)
@@ -139,7 +116,7 @@ def draw_menu():
     instruction_rect = instruction_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 250))
     screen.blit(instruction_text, instruction_rect)
     
-    return play_button_rect, settings_button_rect
+    return button_rect
 
 def game_over():
     game_over_font = pygame.font.Font(None, 80)
@@ -175,7 +152,7 @@ BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
-player = pygame.transform.scale(player, (50, 50)) # set player size
+player = pygame.transform.scale(player, (45, 45)) # set player size
 player_pos = pygame.Vector2(1150, 950) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
@@ -227,6 +204,9 @@ enemy_positions = [
 interacted_with_npc = False
 level_1_spawned = False
 
+objective = 'Talk to NPC'
+objective_font = pygame.font.Font(None, 30)
+
 def create_enemy(pos):
     enemy_rect = pygame.Rect(pos.x, pos.y, 40, 40)
     enemies.append({
@@ -240,6 +220,7 @@ def reset_enemies():
     if interacted_with_npc:
         for pos in enemy_positions:
             create_enemy(pos)
+
     
 def create_enemies():
     for pos in enemy_positions:
@@ -247,6 +228,17 @@ def create_enemies():
 
 def level_1():
     create_enemies()
+
+in_level_2 = False
+
+def level_2():
+    global in_level_2, collision_rects, enemies
+    in_level_2 = True
+    collision_rects = [
+        pygame.Rect(830, 790, 400, 2)
+    ]
+    enemies = []
+
 
 hearts = []
 def create_heart(pos):
@@ -272,11 +264,11 @@ interaction_distance = 100  # How close the player needs to be to interact
 
 # Placeholder dialogue for the NPC in a dictionary
 npc_dialogue = [
-    {"speaker": "NPC", "text": "Hello there, little spirit. Welcome to the afterlife!"}, # Format: "speaker", "text" 
-    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to face off against evil spirits to reach your whanau."},
-    {"speaker": "NPC", "text": "Use WASD to move and click to shoot!"},
-    {"speaker": "Player", "text": "Thank you for advice."},
-    {"speaker": "NPC", "text": "Good luck on your journey!"}
+    {"speaker": "NPC", "text": "Hello there, traveler! Welcome to our village."}, # Format: "speaker", "text" 
+    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to be prepared."},
+    {"speaker": "NPC", "text": "Take this advice: always watch your back in the dark forest."},
+    {"speaker": "Player", "text": "Thank you for the warning. I'll be careful."},
+    {"speaker": "NPC", "text": "Good luck on your adventure!"}
 ]
 
 # Dialogue box settings
@@ -363,6 +355,7 @@ collision_rects = [
     pygame.Rect(755, 1148, 20, 45),
     pygame.Rect(755, 1160, 60, 2)
 ]
+
 
 def create_boundary_walls():
     """Create collision rectangles for the outer boundaries of the background"""
@@ -642,7 +635,7 @@ while running:
     dt = clock.tick(60) / 1000
     # Draw screen and cache button rects before event handling
     if game_state == "menu":
-        play_button_rect, settings_button_rect = draw_menu()
+        play_button_rect = draw_menu()
     elif game_state == "level_select":
         level_buttons, back_button_rect = draw_level_selector()
     elif game_state == "settings":
@@ -651,10 +644,13 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
         # Menu interactions
         if game_state == "menu":
             soundtrack_2.stop()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Get the play button rect from draw_menu
+                play_button = draw_menu()  # This will be called again below, but we need the rect
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button_rect and play_button_rect.collidepoint(mouse_pos):
                     game_state = "level_select"
@@ -791,9 +787,13 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # Simple collision detection for vertical movement
+        # Simple collision detection for vertical movement (no optimization)
         for rect in collision_rects:
             if player_rect.colliderect(rect):
+                if rect == pygame.Rect(755, 1160, 60, 2) and not in_level_2:
+                    if len(enemies) == 0 and interacted_with_npc:
+                        level_2()
+
                 player_pos.y = old_y
                 player_rect.center = player_pos
                 break
@@ -808,16 +808,19 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # Simple collision detection for horizontal movement 
+        # Simple collision detection for horizontal movement (no optimization)
         for rect in collision_rects:
             if player_rect.colliderect(rect):
+                if rect == pygame.Rect(755, 1160, 60, 2):
+                    level_2()
+
                 player_pos.x = old_x
                 player_rect.center = player_pos
                 break
 
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
-            exit()
+            exit() # Return to menu instead of exiting
 
         # update player rectangle position to player position - Riley
         player_rect.center = player_pos
@@ -828,12 +831,19 @@ while running:
         render_surface, darkness_surface = get_render_surfaces()
 
         # Draw everything to render_surface (world coordinates)
-        render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+        if in_level_2:
+            lvl2_background_img = pygame.image.load('lvl2_background.png')
+            lvl2_background_img = pygame.transform.scale(lvl2_background_img, (2000, 1300))
+            render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+
+        else:
+            render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
         # Draw NPC at camera-relative position
         npc_screen_pos = camera.apply(npc_pos)
         npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
-        render_surface.blit(npc_img, npc_draw_rect)
+        if not in_level_2:
+            render_surface.blit(npc_img, npc_draw_rect)
 
         # Draw interaction prompt if player is close to NPC (and not in dialogue)
         if not dialogue_active and not interacted_with_npc:
@@ -846,7 +856,8 @@ while running:
 
         portal_rect2 = portal_rect.copy()
         portal_rect2.topleft = camera.apply(pygame.Vector2(portal_rect2.topleft))
-        render_surface.blit(portal_img, portal_rect2.topleft)
+        if not in_level_2:
+            render_surface.blit(portal_img, portal_rect2.topleft)
 
         # Draw player at camera-relative position
         player_screen_pos = camera.apply(player_pos)
@@ -924,6 +935,17 @@ while running:
                         enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
                         enemy["last_shot"] = current_time
 
+                enemy_moving = True
+                for rect in collision_rects:
+                    if enemy["rect"].colliderect(rect):
+                        enemy_moving = False
+
+                if not enemy_moving:
+                    enemy_vel = 0
+
+                elif enemy_moving:
+                    enemy_vel = 100
+
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
                     deads.append(enemy)
@@ -984,6 +1006,7 @@ while running:
             if not level_1_spawned:
                 level_1()
                 level_1_spawned = True
+                objective = 'Kill all enemies'
 
         hearts_to_remove = []
         if player_lives < 3:
@@ -1001,13 +1024,14 @@ while running:
                     hearts.remove(heart)
 
 
+        # OPTIMIZATION 3: Improved lighting with fewer circles
         if lighting_enabled:
             # Fill the game with darkness
             darkness_surface.fill(darkness_colour)
 
             light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
             max_radius = 250  # The outermost edge of the light
-            step = 6  
+            step = 6  # OPTIMIZED: Increased from 2 to 6 (fewer circles = better performance)
 
             for radius in range(max_radius, 0, -step): # Much fewer iterations now
                 # Calculate brightness for the current ring
@@ -1018,11 +1042,20 @@ while running:
                 # Ensure brightness stays within the valid range of 0 and 255
                 brightness = max(0, min(255, brightness))
 
-                # RBG of the light
+                # RGB of the light
                 light_color = (brightness, brightness, brightness)
-
+                
                 # Draw the circle for this ring of light onto our light map.
                 pygame.draw.circle(darkness_surface, light_color, light_center, radius)
+
+                temp_rect = pygame.Rect(0, 0, 0, 0)
+                temp_rect.center = (portal_rect.centerx - 13, portal_rect.centery - 10)
+                portal_center_screen = camera.apply(temp_rect)
+
+                if len(enemies) == 0 and interacted_with_npc and not in_level_2:
+                    pygame.draw.circle(darkness_surface, light_color, portal_center_screen, 90)
+                    objective = 'Enter portal'
+
 
             render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
@@ -1065,3 +1098,4 @@ while running:
 # Quit
 pygame.quit()
 sys.exit()
+
