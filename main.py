@@ -148,7 +148,7 @@ BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
-player = pygame.transform.scale(player, (50, 50)) # set player size
+player = pygame.transform.scale(player, (45, 45)) # set player size
 player_pos = pygame.Vector2(1150, 950) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
@@ -188,16 +188,19 @@ enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (60, 60))
 enemy_vel = 100
 enemy_positions = [
-    pygame.Vector2(950, 1000),
-    pygame.Vector2(1140, 700),
-    pygame.Vector2(700, 1100),
-    pygame.Vector2(800, 1100),
-    pygame.Vector2(700, 650),
-    pygame.Vector2(850, 650)
+    pygame.Vector2(950, 1000)
+    #pygame.Vector2(1140, 700),
+    #pygame.Vector2(700, 1100),
+    #pygame.Vector2(800, 1100),
+    #pygame.Vector2(700, 650),
+    #pygame.Vector2(850, 650)
 ]
 
 interacted_with_npc = False
 level_1_spawned = False
+
+objective = 'Talk to NPC'
+objective_font = pygame.font.Font(None, 30)
 
 def create_enemy(pos):
     enemy_rect = pygame.Rect(pos.x, pos.y, 40, 40)
@@ -212,6 +215,7 @@ def reset_enemies():
     if interacted_with_npc:
         for pos in enemy_positions:
             create_enemy(pos)
+
     
 def create_enemies():
     for pos in enemy_positions:
@@ -220,14 +224,15 @@ def create_enemies():
 def level_1():
     create_enemies()
 
-lvl2_background_img = pygame.image.load('background.png')
 in_level_2 = False
 
 def level_2():
-    global in_level_2, render_surface, darkness_surface
+    global in_level_2, collision_rects, enemies
     in_level_2 = True
-    render_surface, darkness_surface = get_render_surfaces()
-    render_surface.blit(lvl2_background_img, (0, 0))
+    collision_rects = [
+        pygame.Rect(830, 790, 400, 2)
+    ]
+    enemies = []
 
 
 hearts = []
@@ -670,6 +675,8 @@ while running:
 
         # Draw everything to render_surface (world coordinates)
         if in_level_2:
+            lvl2_background_img = pygame.image.load('lvl2_background.png')
+            lvl2_background_img = pygame.transform.scale(lvl2_background_img, (2000, 1300))
             render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
 
         else:
@@ -678,7 +685,8 @@ while running:
         # Draw NPC at camera-relative position
         npc_screen_pos = camera.apply(npc_pos)
         npc_draw_rect = npc_img.get_rect(center=npc_screen_pos)
-        render_surface.blit(npc_img, npc_draw_rect)
+        if not in_level_2:
+            render_surface.blit(npc_img, npc_draw_rect)
 
         # Draw interaction prompt if player is close to NPC (and not in dialogue)
         if not dialogue_active and not interacted_with_npc:
@@ -691,7 +699,8 @@ while running:
 
         portal_rect2 = portal_rect.copy()
         portal_rect2.topleft = camera.apply(pygame.Vector2(portal_rect2.topleft))
-        render_surface.blit(portal_img, portal_rect2.topleft)
+        if not in_level_2:
+            render_surface.blit(portal_img, portal_rect2.topleft)
 
         # Draw player at camera-relative position
         player_screen_pos = camera.apply(player_pos)
@@ -814,6 +823,7 @@ while running:
                 insane_guitar.play()
                 level_1()
                 level_1_spawned = True
+                objective = 'Kill all enemies'
 
         hearts_to_remove = []
         if player_lives < 3:
@@ -860,9 +870,9 @@ while running:
                 temp_rect.center = (portal_rect.centerx - 13, portal_rect.centery - 10)
                 portal_center_screen = camera.apply(temp_rect)
 
-                if len(enemies) == 0 and interacted_with_npc:
+                if len(enemies) == 0 and interacted_with_npc and not in_level_2:
                     pygame.draw.circle(darkness_surface, light_color, portal_center_screen, 90)
-
+                    objective = 'Enter portal'
 
 
             render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
@@ -894,6 +904,13 @@ while running:
         for i in range(player_lives):
             heart_x = 20 + (i * 35)  # 35 = heart width + spacing
             screen.blit(heart_img, (heart_x, heart_y))
+
+        objective_text = objective_font.render(f"Current Objective: {objective}", True, 'white')
+        objective_rect = objective_text.get_rect(center = (179, 120))
+        
+        screen.blit(objective_text, objective_rect)
+
+        print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
