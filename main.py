@@ -188,12 +188,12 @@ enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (60, 60))
 enemy_vel = 100
 enemy_positions = [
-    pygame.Vector2(950, 1000)
-    #pygame.Vector2(1140, 700),
-    #pygame.Vector2(700, 1100),
-    #pygame.Vector2(800, 1100),
-    #pygame.Vector2(700, 650),
-    #pygame.Vector2(850, 650)
+    pygame.Vector2(950, 1000),
+    pygame.Vector2(1140, 700),
+    pygame.Vector2(700, 1100),
+    pygame.Vector2(800, 1100),
+    pygame.Vector2(700, 650),
+    pygame.Vector2(850, 650)
 ]
 
 interacted_with_npc = False
