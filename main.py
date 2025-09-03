@@ -238,6 +238,12 @@ enemy_positions = [
 interacted_with_npc = False
 level_1_spawned = False
 
+# Enemy spawn timing (ms)
+enemy_spawn_interval = 1500  # milliseconds between enemy spawns
+last_enemy_spawn_time = 0
+enemy_spawn_index = 0
+spawning_enemies = False
+
 def create_enemy(pos):
     enemy_rect = pygame.Rect(pos.x, pos.y, 40, 40)
     enemies.append({
@@ -249,15 +255,22 @@ def create_enemy(pos):
 def reset_enemies():
     enemies.clear()
     if interacted_with_npc:
-        for pos in enemy_positions:
-            create_enemy(pos)
+        # Start timed respawn instead of instant spawn
+        global enemy_spawn_index, last_enemy_spawn_time, spawning_enemies
+        enemy_spawn_index = 0
+        last_enemy_spawn_time = pygame.time.get_ticks()
+        spawning_enemies = True
     
 def create_enemies():
     for pos in enemy_positions:
         create_enemy(pos)
 
 def level_1():
-    create_enemies()
+    # Start spawning enemies over time instead of creating all at once
+    global enemy_spawn_index, last_enemy_spawn_time, spawning_enemies
+    enemy_spawn_index = 0
+    last_enemy_spawn_time = pygame.time.get_ticks()
+    spawning_enemies = True
 
 hearts = []
 def create_heart(pos):
@@ -283,19 +296,19 @@ interaction_distance = 100  # How close the player needs to be to interact
 
 # Placeholder dialogue for the NPC in a dictionary
 npc_dialogue = [
-    {"speaker": "NPC", "text": "Hello there, little spirit. Welcome to the afterlife!"}, # Format: "speaker", "text" 
-    {"speaker": "NPC", "text": "The journey ahead is dangerous. You'll need to face off against evil spirits to reach your whanau."},
-    {"speaker": "NPC", "text": "Use WASD to move and click to shoot!"},
+    {"speaker": "Tāne", "text": "Hello there, little spirit. Welcome to the afterlife!"}, # Format: "speaker", "text" 
+    {"speaker": "Tāne", "text": "The journey ahead is dangerous. You'll need to face off against evil spirits to reach your whanau."},
+    {"speaker": "Tāne", "text": "Use WASD to move and click to shoot!"},
     {"speaker": "Player", "text": "Thank you for advice."},
-    {"speaker": "NPC", "text": "Good luck on your journey!"}
+    {"speaker": "Tāne", "text": "Good luck on your journey!"}
 ]
 
 maori_npc_dialogue = [
-    {"speaker": "NPC", "text": "Kia ora e te wairua iti. Nau mai ki te ao o muri!"}, # Format: "speaker", "text" 
-    {"speaker": "NPC", "text": "He kino te haerenga kei mua. Me whawhai koe ki nga wairua kino kia tae atu ki to whanau."},
-    {"speaker": "NPC", "text": "Whakamahia te WASD ki te neke ka paato ki te kopere!"},
+    {"speaker": "Tāne", "text": "Kia ora e te wairua iti. Nau mai ki te ao o muri!"}, # Format: "speaker", "text" 
+    {"speaker": "Tāne", "text": "He kino te haerenga kei mua. Me whawhai koe ki nga wairua kino kia tae atu ki to whanau."},
+    {"speaker": "Tāne", "text": "Whakamahia te WASD ki te neke ka paato ki te kopere!"},
     {"speaker": "Kaiwhakatangi", "text": "Mauruuru koe mo te tohutohu."},
-    {"speaker": "NPC", "text": "Kia pai to haerenga!"}
+    {"speaker": "Tāne", "text": "Kia pai to haerenga!"}
 ]
 
 # Dialogue box settings
@@ -1062,6 +1075,17 @@ while running:
             if not level_1_spawned:
                 level_1()
                 level_1_spawned = True
+
+        # Timed enemy spawning: spawn one enemy every enemy_spawn_interval ms
+        if spawning_enemies and enemy_spawn_index < len(enemy_positions):
+            now = pygame.time.get_ticks()
+            if now - last_enemy_spawn_time >= enemy_spawn_interval:
+                create_enemy(enemy_positions[enemy_spawn_index])
+                enemy_spawn_index += 1
+                last_enemy_spawn_time = now
+
+            if enemy_spawn_index >= len(enemy_positions):
+                spawning_enemies = False
 
         hearts_to_remove = []
         if player_lives < 3:
