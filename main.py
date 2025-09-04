@@ -1106,8 +1106,10 @@ while running:
             if not level_1_spawned:
                 level_1()
                 level_1_spawned = True
-                objective = 'Kill all enemies'
-
+                if language == "en":
+                    objective = 'Objective: Kill all enemies'
+                elif language == "mi":
+                    objective = "whāinga poto: tinei katoa ngangare"
         hearts_to_remove = []
         if player_lives < 3:
             for heart in hearts:
@@ -1153,13 +1155,12 @@ while running:
 
                 if len(enemies) == 0 and interacted_with_npc and not in_level_2:
                     pygame.draw.circle(darkness_surface, light_color, portal_center_screen, 90)
-                    # Update objective text to instruct player to go to the portal
                     if language == "en":
-                        objective = 'Go to the portal'
+                        objective = 'Objective: Go to the portal'
                     elif language == "mi":
-                        objective = 'Haere ki te tomokanga'
+                        objective = 'whāinga poto: Haere ki te tomokanga'
                     else:
-                        objective = 'Go to the portal'
+                        objective = 'Objective: Go to the portal'
 
 
             render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
