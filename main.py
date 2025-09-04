@@ -225,12 +225,12 @@ enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (60, 60))
 enemy_vel = 100
 enemy_positions = [
-    pygame.Vector2(950, 1000),
-    pygame.Vector2(1140, 700),
-    pygame.Vector2(700, 1100),
-    pygame.Vector2(800, 1100),
-    pygame.Vector2(700, 650),
-    pygame.Vector2(850, 650)
+    pygame.Vector2(950, 1000)
+    #pygame.Vector2(1140, 700),
+    #pygame.Vector2(700, 1100),
+    #pygame.Vector2(800, 1100),
+    #pygame.Vector2(700, 650),
+    #pygame.Vector2(850, 650)
 ]
 
 interacted_with_npc = False
@@ -922,9 +922,9 @@ while running:
 
         # Draw everything to render_surface (world coordinates)
         if in_level_2:
-            # lvl2_background_img = pygame.image.load('lvl2_background.png')
-            # lvl2_background_img = pygame.transform.scale(lvl2_background_img, (2000, 1300))
-            # render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
+            lvl2_background_img = pygame.image.load('lvl2_background.png')
+            lvl2_background_img = pygame.transform.scale(lvl2_background_img, (2000, 1300))
+            render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
             pass
 
         else:
@@ -1125,14 +1125,6 @@ while running:
                 if heart in hearts:
                     hearts.remove(heart)
 
-
-        if lighting_enabled:
-            # Fill the game with darkness
-            darkness_surface.fill(darkness_colour)
-
-            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
-            max_radius = 250  # The outermost edge of the light
-            step = 6
 
             for radius in range(max_radius, 0, -step): # Much fewer iterations now
                 # Calculate brightness for the current ring
