@@ -163,7 +163,10 @@ def draw_menu():
 
 def game_over():
     game_over_font = pygame.font.Font(None, 80)
-    game_over_txt = game_over_font.render('Game Over', True, 'white')
+    if language == "en":
+        game_over_txt = game_over_font.render('Game Over', True, 'white')
+    elif language == "mi":
+        game_over_txt = game_over_font.render('Tākarokaro ka huri', True, 'white')
     game_over_rect = game_over_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
 
     bg = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
