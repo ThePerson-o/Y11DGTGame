@@ -1,10 +1,6 @@
 import pygame
 import sys
-import os
-import pickle as p
 import random
-from googletrans import Translator
-
 
 # Start pygame
 pygame.init()
@@ -20,13 +16,14 @@ end_colour = (80, 80, 120)
 # Load sounds
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
 trumpet.set_volume(0.3)
-water_drip = pygame.mixer.Sound("water_drip.mp3")
 soundtrack_1 = pygame.mixer.Sound("soundtrack 1.mp3")
 soundtrack_2 = pygame.mixer.Sound("soundtrack 2.mp3")
 soundtrack_1.set_volume(0.2)
 soundtrack_2.set_volume(0.2)
 
+# Set language
 language = "en"
+
 ZOOM = 1.2  # zoom level 
 
 # Camera dead zone - Alex
@@ -34,7 +31,7 @@ CAMERA_MARGIN_X = 120
 CAMERA_MARGIN_Y = 80
 
 # Game Menu 
-game_state = "menu"
+game_state = "menu" # Default state
 selected_level = None  # Store the selected level
 
 # Timer variables
@@ -48,6 +45,9 @@ lighting_enabled = True
 light_sources = []
 darkness_colour = (20,20,40)
 
+# =============================================================================
+
+# Make gradient menu beforehand 
 def create_menu_background(w, h):
     surf = pygame.Surface((w, h))  
     for y in range(h):
@@ -63,6 +63,7 @@ def create_menu_background(w, h):
 menu_background = None
 menu_bg_size = (0, 0)
 
+# Code for resizing menu background
 def get_menu_background():
     global menu_background, menu_bg_size
     current_size = (WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -73,6 +74,7 @@ def get_menu_background():
     
     return menu_background
 
+# Draw main text and the main menu
 def draw_menu(): 
     screen.blit(get_menu_background(), (0, 0))
 
@@ -99,7 +101,7 @@ def draw_menu():
         button_text = button_font.render("Play", True, (255, 255, 255))
     elif language == "mi":
         button_text = button_font.render("Kori", True, (255, 255, 255))
-    # Button rectangle
+    # Button rectangle + Hover animations
     button_width = 200
     button_height = 80
     button_x = (WINDOW_WIDTH - button_width) // 2
@@ -114,7 +116,7 @@ def draw_menu():
     text_rect = button_text.get_rect(center=play_button_rect.center)
     screen.blit(button_text, text_rect)
 
-    # Settings button below Play button
+    # Settings button below "Play" button
     if language == "mi":
         settings_button_width = 350  
         settings_button_x = button_x - 60  
@@ -130,7 +132,7 @@ def draw_menu():
     pygame.draw.rect(screen, button_color_settings, settings_button_rect)
     pygame.draw.rect(screen, border_color_settings, settings_button_rect, 3)
     
-    # Settings icon (left side of button)
+    # Settings icon
     settings_icon = pygame.image.load("setting.png")
     icon_width, icon_height = settings_icon.get_size()
     shrunk_size = (int(icon_width * 0.1), int(icon_height * 0.1))
@@ -140,7 +142,7 @@ def draw_menu():
     icon_rect.left = settings_button_rect.left + 10
     screen.blit(settings_icon, icon_rect)
 
-    # Settings text (right of icon, centered vertically)
+    # Settings text 
     if language == "en":
         settings_text = button_font.render("Settings", True, (255, 255, 255))
     elif language == "mi":
@@ -161,6 +163,9 @@ def draw_menu():
     
     return play_button_rect, settings_button_rect
 
+# =============================================================================
+
+# Draw game over screen - Riley
 def game_over():
     game_over_font = pygame.font.Font(None, 80)
     if language == "en":
@@ -176,7 +181,7 @@ def game_over():
     pygame.init()
 
 
-# Create window BEFORE loading images to reduce gap in performance
+# Create game window
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Dark to Light")
 clock = pygame.time.Clock()
@@ -185,6 +190,8 @@ clock = pygame.time.Clock()
 background_img = pygame.image.load("background_full.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
+# =============================================================================
+
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
 player = pygame.transform.scale(player, (50, 50)) # set player size
@@ -192,6 +199,8 @@ player_pos = pygame.Vector2(1150, 950) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
 player_rect.center = player_pos
 player_vel = 150 # player speed
+
+# =============================================================================
 
 # Load heart icon
 heart_img = pygame.image.load("heart.png").convert_alpha()
@@ -206,6 +215,7 @@ npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
 npc_img = pygame.transform.scale(npc_img, (70, 70))
 npc_pos = pygame.Vector2(1000, 850)
 npc_rect = npc_img.get_rect(center=npc_pos)
+# =============================================================================
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
@@ -236,8 +246,19 @@ enemy_positions = [
     #pygame.Vector2(850, 650)
 ]
 
+# =============================================================================
+
+
 interacted_with_npc = False
 level_1_spawned = False
+
+# How many enemies to spawn for level 1
+ENEMY_SPAWN_COUNT = 10
+
+def get_random_spawn_pos(margin=60):
+    x = random.randint(margin, BG_WIDTH - margin)
+    y = random.randint(margin, BG_HEIGHT - margin)
+    return pygame.Vector2(x, y)
 
 objective = 'Talk to NPC'
 objective_font = pygame.font.Font(None, 30)
@@ -252,9 +273,8 @@ def create_enemy(pos):
 
 def reset_enemies():
     enemies.clear()
-    if interacted_with_npc:
-        for pos in enemy_positions:
-            create_enemy(pos)
+    # just clear; spawning happens when level starts
+    pass
 
     
 def create_enemies():
@@ -262,7 +282,20 @@ def create_enemies():
         create_enemy(pos)
 
 def level_1():
-    create_enemies()
+    # Spawn ENEMY_SPAWN_COUNT enemies at random positions across the map
+    for _ in range(ENEMY_SPAWN_COUNT):
+        # try a few times to avoid spawning too close to the player
+        spawn_pos = get_random_spawn_pos()
+        attempts = 0
+        while attempts < 20:
+            try:
+                if (spawn_pos - player_pos).length() > 200:
+                    break
+            except Exception:
+                break
+            spawn_pos = get_random_spawn_pos()
+            attempts += 1
+        create_enemy(spawn_pos)
 
 in_level_2 = False
 
@@ -273,6 +306,8 @@ def level_2():
         pygame.Rect(830, 790, 400, 2)
     ]
     enemies = []
+
+# =============================================================================
 
 
 hearts = []
@@ -289,6 +324,8 @@ def spawn_hearts():
         create_heart(pos)
 
 spawn_hearts()
+
+# =============================================================================
 
 
 # NPC Dialogue
@@ -322,6 +359,8 @@ dialogue_text_color = (255, 255, 255) # White text colour
 dialogue_box_color = (50, 50, 50) # Dark black box colour
 dialogue_border_color = (200, 200, 200) # Grey for border
 speaker_color = (255, 215, 0)  # Gold for speaker
+
+# =============================================================================
 
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
@@ -370,6 +409,8 @@ class Camera:
     def apply(self, pos):
         # Convert world pos to camera/screen pos
         return pygame.Vector2(pos.x - self.x, pos.y - self.y)
+    
+# =============================================================================
 
 # List of rectangles for collision - Riley
 collision_rects = [
@@ -479,6 +520,8 @@ diagnal_line(15, 755, 1193, -1, 1)
 boundary_walls = create_boundary_walls()
 collision_rects.extend(boundary_walls)
 
+# =============================================================================
+
 # Create camera
 camera = Camera(
     int(WINDOW_WIDTH / ZOOM),
@@ -507,6 +550,9 @@ def get_render_surfaces():
 # Fullscreen toggle state
 fullscreen = False
 
+# =============================================================================
+
+
 # Function to wrap text for dialogue box
 def wrap_text(text, font, max_width):
     """Break text into lines that fit within max_width"""
@@ -531,6 +577,8 @@ def wrap_text(text, font, max_width):
         lines.append(' '.join(current_line))
     
     return lines
+
+# =============================================================================
 
 # Function to draw dialogue box
 def draw_dialogue_box(surface, speaker, text):
@@ -567,6 +615,8 @@ def draw_dialogue_box(surface, speaker, text):
     indicator_x = box_x + dialogue_box_width - indicator_surface.get_width() - dialogue_padding
     indicator_y = box_y + dialogue_box_height - 30
     surface.blit(indicator_surface, (indicator_x, indicator_y))
+
+# =============================================================================
 
 def draw_level_selector():
     """Draw the level selection menu and return a list of level button rects and the back button rect"""
@@ -635,6 +685,9 @@ def draw_level_selector():
 
 # Settings menu variables
 sound_enabled = True  
+
+# =============================================================================
+
 
 def draw_settings_menu():
     """Draw the settings menu and return the sound toggle button rect, as well as the language toggle rect"""
@@ -714,6 +767,8 @@ def draw_settings_menu():
 
     return lang_button_rect, sound_button_rect, back_button_rect
 
+# =============================================================================
+
 # Main loop
 running = True
 play_button_rect, settings_button_rect = None, None
@@ -732,6 +787,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # =============================================================================
+
         # Menu interactions
         if game_state == "menu":
             soundtrack_2.stop()
@@ -752,6 +810,9 @@ while running:
                     game_state = "settings"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False  # Exit game from main menu
+
+        # =============================================================================
+
         # Settings interactions
         elif game_state == "settings":
             soundtrack_2.stop()
@@ -763,13 +824,15 @@ while running:
                     sound_enabled = not sound_enabled
                     # Set sound volume accordingly
                     trumpet.set_volume(0.3 if sound_enabled else 0.0)
-                    water_drip.set_volume(1.0 if sound_enabled else 0.0)
                     soundtrack_1.set_volume(0.5 if sound_enabled else 0.0)
                     soundtrack_2.set_volume(0.5 if sound_enabled else 0.0)
                 if settings_back_button_rect and settings_back_button_rect.collidepoint(mouse_pos):
                     game_state = "menu"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 game_state = "menu"
+
+        # =============================================================================
+
         # Level selector interactions
         elif game_state == "level_select":
             soundtrack_2.stop()
@@ -791,6 +854,7 @@ while running:
                     game_state = "menu"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 game_state = "menu"  # Go back to main menu from level select
+        # =============================================================================
 
         # Game interactions (only when playing)
         elif game_state == "playing":
@@ -813,6 +877,8 @@ while running:
                 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
                 camera.width = int(WINDOW_WIDTH / ZOOM)
                 camera.height = int(WINDOW_HEIGHT / ZOOM)
+
+        # =============================================================================
 
             # Handle dialogue interaction
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
@@ -866,7 +932,9 @@ while running:
             game_over_time = 0
             # Reset objective when returning to menu after game over
             objective = 'Talk to NPC'
-        
+
+    # =============================================================================
+    
     elif game_state == "playing":
         keys = pygame.key.get_pressed()
 
@@ -965,8 +1033,8 @@ while running:
         screen.blit(render_surface, (0, 0))
         screen.blit(darkness_surface, (0, 0))
 
-    # (Hint rendering moved later so it isn't affected by darkness)
-        
+        # =============================================================================
+ 
         if lighting_enabled:
             # Fill the game with darkness
             darkness_surface.fill(darkness_colour)
@@ -998,6 +1066,7 @@ while running:
             cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
             pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
+        # =============================================================================
 
         to_remove = []
         moving = []
@@ -1100,6 +1169,7 @@ while running:
                 if proj in projectiles:
                     projectiles.remove(proj)
 
+        # =============================================================================
 
         if player_lives == 0:
             game_state = "game_over"
@@ -1159,6 +1229,8 @@ while running:
 
 
             render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
+
+        # =============================================================================
 
         # Scale render_surface to screen for zoom effect
         scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
