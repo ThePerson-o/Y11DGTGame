@@ -1,6 +1,5 @@
 import pygame
 import sys
-import random
 
 # Start pygame
 pygame.init()
@@ -238,12 +237,12 @@ enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
 enemy_image = pygame.transform.scale(enemy_image, (60, 60))
 enemy_vel = 100
 enemy_positions = [
-    pygame.Vector2(950, 1000)
-    #pygame.Vector2(1140, 700),
-    #pygame.Vector2(700, 1100),
-    #pygame.Vector2(800, 1100),
-    #pygame.Vector2(700, 650),
-    #pygame.Vector2(850, 650)
+    pygame.Vector2(950, 1000),
+    pygame.Vector2(1140, 700),
+    pygame.Vector2(700, 1100),
+    pygame.Vector2(800, 1100),
+    pygame.Vector2(700, 650),
+    pygame.Vector2(850, 650)
 ]
 
 # =============================================================================
@@ -252,13 +251,6 @@ enemy_positions = [
 interacted_with_npc = False
 level_1_spawned = False
 
-# How many enemies to spawn for level 1
-ENEMY_SPAWN_COUNT = 10
-
-def get_random_spawn_pos(margin=60):
-    x = random.randint(margin, BG_WIDTH - margin)
-    y = random.randint(margin, BG_HEIGHT - margin)
-    return pygame.Vector2(x, y)
 
 objective = 'Talk to NPC'
 objective_font = pygame.font.Font(None, 30)
@@ -280,22 +272,6 @@ def reset_enemies():
 def create_enemies():
     for pos in enemy_positions:
         create_enemy(pos)
-
-def level_1():
-    # Spawn ENEMY_SPAWN_COUNT enemies at random positions across the map
-    for _ in range(ENEMY_SPAWN_COUNT):
-        # try a few times to avoid spawning too close to the player
-        spawn_pos = get_random_spawn_pos()
-        attempts = 0
-        while attempts < 20:
-            try:
-                if (spawn_pos - player_pos).length() > 200:
-                    break
-            except Exception:
-                break
-            spawn_pos = get_random_spawn_pos()
-            attempts += 1
-        create_enemy(spawn_pos)
 
 in_level_2 = False
 
@@ -618,6 +594,7 @@ def draw_dialogue_box(surface, speaker, text):
 
 # =============================================================================
 
+# Draw the level selector
 def draw_level_selector():
     """Draw the level selection menu and return a list of level button rects and the back button rect"""
     screen.blit(get_menu_background(), (0, 0))
@@ -688,7 +665,7 @@ sound_enabled = True
 
 # =============================================================================
 
-
+# Function to draw settings menu
 def draw_settings_menu():
     """Draw the settings menu and return the sound toggle button rect, as well as the language toggle rect"""
     screen.blit(get_menu_background(), (0, 0)) 
@@ -1177,8 +1154,9 @@ while running:
 
         if interacted_with_npc:
             if not level_1_spawned:
-                level_1()
                 level_1_spawned = True
+                if selected_level == "Level 1":
+                    create_enemies()
                 if language == "en":
                     objective = 'Objective: Kill all enemies'
                 elif language == "mi":
