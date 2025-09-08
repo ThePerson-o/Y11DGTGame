@@ -1269,8 +1269,8 @@ while running:
             screen.blit(obj_bg, ((WINDOW_WIDTH - obj_bg.get_width()) // 2, obj_y))
             screen.blit(obj_text, ((WINDOW_WIDTH - obj_text.get_width()) // 2, obj_y + 5))
 
-    # Check if soundtrack_1 finished and repeat if needed
-    if selected_level == "Level 1":
+    # Check if soundtrack_2 finished and repeat if needed — only while actively playing Level 1
+    if selected_level == "Level 1" and game_state == "playing":
         if not pygame.mixer.get_busy():
             soundtrack_2.play(loops=0)
 
