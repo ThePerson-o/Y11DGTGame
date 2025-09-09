@@ -239,12 +239,11 @@ enemy_image = pygame.transform.scale(enemy_image, (60, 60)) # set enemy image si
 enemy_vel = 100 # enemy speed
 # positions for enemies to be spawned
 enemy_positions = [
-    #pygame.Vector2(950, 1000),
-    #pygame.Vector2(1140, 700),
-    #pygame.Vector2(700, 1100),
-    pygame.Vector2(800, 1000)
-    #pygame.Vector2(700, 650),
-    #pygame.Vector2(850, 650)
+    pygame.Vector2(745, 1255),
+    pygame.Vector2(100, 300),
+    pygame.Vector2(750, 650),
+    pygame.Vector2(1000, 200),
+    pygame.Vector2(1500, 600)
 ]
 
 interacted_with_npc = False # Variable to check if the player has talked to NPC
@@ -1370,6 +1369,8 @@ while running:
 
     if game_finished:
         end_screen()
+
+    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
