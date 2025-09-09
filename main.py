@@ -1,5 +1,9 @@
 import pygame
 import sys
+import os
+import pickle as p
+from googletrans import Translator
+
 
 # Start pygame
 pygame.init()
@@ -15,14 +19,13 @@ end_colour = (80, 80, 120)
 # Load sounds
 trumpet = pygame.mixer.Sound("start_game_effect.mp3") # Trumpet sound for starting the game
 trumpet.set_volume(0.3)
+water_drip = pygame.mixer.Sound("water_drip.mp3")
 soundtrack_1 = pygame.mixer.Sound("soundtrack 1.mp3")
 soundtrack_2 = pygame.mixer.Sound("soundtrack 2.mp3")
 soundtrack_1.set_volume(0.2)
 soundtrack_2.set_volume(0.2)
 
-# Set language
 language = "en"
-
 ZOOM = 1.2  # zoom level 
 
 # Camera dead zone - Alex
@@ -30,11 +33,12 @@ CAMERA_MARGIN_X = 120
 CAMERA_MARGIN_Y = 80
 
 # Game Menu 
-game_state = "menu" # Default state
+game_state = "menu"
 selected_level = None  # Store the selected level
 
 # Timer variables
 game_start_time = 0
+end_time = 0
 timer_font = pygame.font.Font(None, 36)
 timer_border_location = 10
 timer_location = 15
@@ -44,9 +48,6 @@ lighting_enabled = True
 light_sources = []
 darkness_colour = (20,20,40)
 
-# =============================================================================
-
-# Make gradient menu beforehand 
 def create_menu_background(w, h):
     surf = pygame.Surface((w, h))  
     for y in range(h):
@@ -62,7 +63,6 @@ def create_menu_background(w, h):
 menu_background = None
 menu_bg_size = (0, 0)
 
-# Code for resizing menu background
 def get_menu_background():
     global menu_background, menu_bg_size
     current_size = (WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -73,7 +73,6 @@ def get_menu_background():
     
     return menu_background
 
-# Draw main text and the main menu
 def draw_menu(): 
     screen.blit(get_menu_background(), (0, 0))
 
@@ -100,7 +99,7 @@ def draw_menu():
         button_text = button_font.render("Play", True, (255, 255, 255))
     elif language == "mi":
         button_text = button_font.render("Kori", True, (255, 255, 255))
-    # Button rectangle + Hover animations
+    # Button rectangle
     button_width = 200
     button_height = 80
     button_x = (WINDOW_WIDTH - button_width) // 2
@@ -115,7 +114,7 @@ def draw_menu():
     text_rect = button_text.get_rect(center=play_button_rect.center)
     screen.blit(button_text, text_rect)
 
-    # Settings button below "Play" button
+    # Settings button below Play button
     if language == "mi":
         settings_button_width = 350  
         settings_button_x = button_x - 60  
@@ -131,7 +130,7 @@ def draw_menu():
     pygame.draw.rect(screen, button_color_settings, settings_button_rect)
     pygame.draw.rect(screen, border_color_settings, settings_button_rect, 3)
     
-    # Settings icon
+    # Settings icon (left side of button)
     settings_icon = pygame.image.load("setting.png")
     icon_width, icon_height = settings_icon.get_size()
     shrunk_size = (int(icon_width * 0.1), int(icon_height * 0.1))
@@ -141,7 +140,7 @@ def draw_menu():
     icon_rect.left = settings_button_rect.left + 10
     screen.blit(settings_icon, icon_rect)
 
-    # Settings text 
+    # Settings text (right of icon, centered vertically)
     if language == "en":
         settings_text = button_font.render("Settings", True, (255, 255, 255))
     elif language == "mi":
@@ -162,15 +161,24 @@ def draw_menu():
     
     return play_button_rect, settings_button_rect
 
-# =============================================================================
+# This is a function that draws a black screen with a message in the center of the screen to the player for completing the game.
+def end_screen():
+    seconds = (end_time - game_start_time) // 1000
+    
+    end_screen_font = pygame.font.Font(None, 40)
+    end_screen_txt = end_screen_font.render(f'Congrats! You finished the game. Finish time: {seconds}. Press esc to exit.', True, 'white')
+    end_screen_rect = end_screen_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
 
-# Draw game over screen - Riley
+    bg = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+    screen.blit(bg, (0, 0))
+    screen.blit(end_screen_txt, end_screen_rect)
+
+game_finished = False
+# function that draws a black screen with game over text in the center
 def game_over():
     game_over_font = pygame.font.Font(None, 80)
-    if language == "en":
-        game_over_txt = game_over_font.render('Game Over', True, 'white')
-    elif language == "mi":
-        game_over_txt = game_over_font.render('Tākarokaro ka huri', True, 'white')
+    game_over_txt = game_over_font.render('Game Over', True, 'white')
     game_over_rect = game_over_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
 
     bg = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -180,7 +188,7 @@ def game_over():
     pygame.init()
 
 
-# Create game window
+# Create window BEFORE loading images to reduce gap in performance
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Dark to Light")
 clock = pygame.time.Clock()
@@ -189,17 +197,13 @@ clock = pygame.time.Clock()
 background_img = pygame.image.load("background_full.png").convert_alpha()
 BG_WIDTH, BG_HEIGHT = background_img.get_size()
 
-# =============================================================================
-
 #player - Riley
 player = pygame.image.load('sprites/player.png').convert_alpha() # load the player image
 player = pygame.transform.scale(player, (50, 50)) # set player size
 player_pos = pygame.Vector2(1150, 950) # set initial player position
 player_rect = pygame.Rect(0, 0, 20, 20) # Player rectangle for collisions
-player_rect.center = player_pos
+player_rect.center = player_pos # Move the player retangle onto the player position
 player_vel = 150 # player speed
-
-# =============================================================================
 
 # Load heart icon
 heart_img = pygame.image.load("heart.png").convert_alpha()
@@ -214,28 +218,26 @@ npc_img = pygame.image.load('sprites/NPC.png').convert_alpha()
 npc_img = pygame.transform.scale(npc_img, (70, 70))
 npc_pos = pygame.Vector2(1000, 850)
 npc_rect = npc_img.get_rect(center=npc_pos)
-# =============================================================================
 
 # projectiles - Riley
 projectile_image = pygame.image.load('sprites/player_projectile.png').convert_alpha() # saves the projectile image
-projectile_image = pygame.transform.scale(projectile_image, (30, 30))
+projectile_image = pygame.transform.scale(projectile_image, (30, 30)) # Set projectile size
 projectiles = [] # create a list to store information for projectiles (eg position)
-projectile_vel = 130 # set the speed of the projectile
+projectile_vel = 100 # set the speed of the projectile
 
-enemy_projectiles = []
-enemy_proj_image = pygame.image.load('sprites/enemy_projectile.png').convert_alpha()
-enemy_proj_image = pygame.transform.scale(enemy_proj_image, (30, 30))
-enemy_proj_vel = 400
+enemy_projectiles = [] # list to store information about enemy projectiles (eg posision)
+enemy_proj_image = pygame.image.load('sprites/enemy_projectile.png').convert_alpha() # Load enemy projectile image
+enemy_proj_image = pygame.transform.scale(enemy_proj_image, (30, 30)) # Set enemy projectile size
+enemy_proj_vel = 400 # Enemy projectile speed
 
-portal_img = pygame.image.load('sprites/portal.png')
-portal_img = pygame.transform.scale(portal_img, (120, 120))
-portal_rect = pygame.Rect(730, 1100, 150, 150)
+portal_img = pygame.image.load('sprites/portal.png') # Load portal image
+portal_img = pygame.transform.scale(portal_img, (120, 120)) # Set portal size
 
-enemies = []
-enemy_projectiles = []
-enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha()
-enemy_image = pygame.transform.scale(enemy_image, (60, 60))
-enemy_vel = 100
+enemies = [] # List to store enemies
+enemy_image = pygame.image.load('sprites/enemy.png').convert_alpha() # load enemy image
+enemy_image = pygame.transform.scale(enemy_image, (60, 60)) # set enemy image size
+enemy_vel = 100 # enemy speed
+# positions for enemies to be spawned
 enemy_positions = [
     pygame.Vector2(745, 1255),
     pygame.Vector2(100, 300),
@@ -245,16 +247,13 @@ enemy_positions = [
     pygame.Vector2(1800, 400)
 ]
 
-# =============================================================================
-
-
-interacted_with_npc = False
-level_1_spawned = False
-
+interacted_with_npc = False # Variable to check if the player has talked to NPC
+level_1_spawned = False # Variable to check if level 1 has been spawned yet
 
 objective = 'Talk to NPC'
 objective_font = pygame.font.Font(None, 30)
 
+# This function creates an enemy in the enemies list and stores important information about the enemy so it can be drawn on screen later
 def create_enemy(pos):
     enemy_rect = pygame.Rect(pos.x, pos.y, 40, 40)
     enemies.append({
@@ -263,34 +262,118 @@ def create_enemy(pos):
         "cooldown": 1000
     })
 
+# This funtion clears the enemies list so that enemies are removed from the screen, and if the player has interacted with the npc, redraws them at their original positions.
 def reset_enemies():
     enemies.clear()
-    # just clear; spawning happens when level starts
-    pass
+    if interacted_with_npc:
+        for pos in enemy_positions:
+            create_enemy(pos)
 
-    
+# This function calls the create_enemy() funtion for every position in the enemy positions list
 def create_enemies():
     for pos in enemy_positions:
         create_enemy(pos)
 
-in_level_2 = False
+# This function calls the create_enemies() function
+def level_1():
+    create_enemies()
 
+in_level_2 = False # Variable to check if the player is in level 2
+
+# This function contains all the code for level 2 such as the new collisions and new player position.
 def level_2():
-    global in_level_2, collision_rects, enemies
+    global in_level_2, collision_rects, enemy_positions, player_pos, objective, heart_positions
     in_level_2 = True
+    # Set Level 2 objective (displayed as the yellow objective text)
+    if language == "en":
+        objective = 'Objective: Reach the End'
+    elif language == "mi":
+        objective = 'whāinga poto: Tae atu ki te mutunga'
+
+    player_pos = pygame.Vector2(1000, 1200)
+
     collision_rects = [
-        pygame.Rect(830, 790, 400, 2)
+        pygame.Rect(805, 790, 390, 60),
+        pygame.Rect(805, 850, 53, 170),
+        pygame.Rect(690, 960, 120, 60),
+        pygame.Rect(690, 960, 60, 165),
+        pygame.Rect(750, 1070, 215, 55),
+        pygame.Rect(910, 900, 55, 180),
+        pygame.Rect(910, 900, 180, 50),
+        pygame.Rect(1140, 850, 55, 120),
+        pygame.Rect(1140, 915, 170, 55),
+        pygame.Rect(1255, 970, 55, 100),
+        pygame.Rect(1140, 1020, 170, 57),
+        pygame.Rect(1310, 1025, 215, 52),
+        pygame.Rect(1025, 1000, 55, 230),
+        pygame.Rect(1080, 1130, 557, 55),
+        pygame.Rect(355, 1180, 610, 50),
+        pygame.Rect(578, 860, 168, 55),
+        pygame.Rect(578, 915, 55, 210),
+        pygame.Rect(470, 1070, 110, 55),
+        pygame.Rect(690, 690, 55, 170),
+        pygame.Rect(745, 690, 180, 55),
+        pygame.Rect(870, 585, 55, 110),
+        pygame.Rect(925, 585, 172, 55),
+        pygame.Rect(1042, 585, 55, 155),
+        pygame.Rect(1042, 690, 260, 55),
+        pygame.Rect(1247, 690, 55, 175),
+        pygame.Rect(1247, 810, 170, 55),
+        pygame.Rect(1362, 810, 55, 170),
+        pygame.Rect(1470, 485, 55, 570),
+        pygame.Rect(470, 490, 55, 530),
+        pygame.Rect(575, 585, 55, 225),
+        pygame.Rect(520, 755, 60, 55),
+        pygame.Rect(575, 585, 240, 55),
+        pygame.Rect(760, 380, 55, 205),
+        pygame.Rect(760, 380, 222, 55),
+        pygame.Rect(927, 380, 55, 155),
+        pygame.Rect(927, 490, 275, 45),
+        pygame.Rect(1147, 490, 55, 150),
+        pygame.Rect(1147, 585, 265, 55),
+        pygame.Rect(1357, 585, 55, 170),
+        pygame.Rect(470, 175, 55, 255),
+        pygame.Rect(470, 375, 125, 55),
+        pygame.Rect(540, 375, 55, 160),
+        pygame.Rect(540, 480, 165, 55),
+        pygame.Rect(355, 75, 55, 530),
+        pygame.Rect(355, 550, 115, 55),
+        pygame.Rect(355, 660, 55, 520),
+        pygame.Rect(470, 175, 420, 55),
+        pygame.Rect(835, 175, 55, 160),
+        pygame.Rect(835, 280, 255, 55),
+        pygame.Rect(1035, 280, 55, 160),
+        pygame.Rect(1035, 385, 270, 55),
+        pygame.Rect(1250, 385, 55, 155),
+        pygame.Rect(1250, 485, 220, 55),
+        pygame.Rect(650, 175, 55, 350),
+        pygame.Rect(355, 75, 1280, 55),
+        pygame.Rect(1580, 75, 55, 1100),
+        pygame.Rect(950, 130, 55, 100),
+        pygame.Rect(950, 175, 250, 55),
+        pygame.Rect(1145, 175, 55, 160),
+        pygame.Rect(1145, 280, 270, 55),
+        pygame.Rect(1360, 280, 55, 155),
+        pygame.Rect(1360, 380, 220, 55),
+        pygame.Rect(960, 1228, 100, 2),
+        pygame.Rect(355, 580, 2, 100),
+        pygame.Rect(715, 340, 20, 2),
+        pygame.Rect(815, 335, 10, 2),
+        pygame.Rect(750, 275, 2, 50),
+        pygame.Rect(800, 275, 2, 50),
+        pygame.Rect(750, 290, 50, 2)
     ]
-    enemies = []
 
-# =============================================================================
+    enemy_positions = []
+    heart_positions = []
 
-
+# This function stores a rectangle in the hearts list at the position specified
 hearts = []
 def create_heart(pos):
     heart_rect = pygame.Rect(pos.x, pos.y, 20, 20)
     hearts.append({"rect": heart_rect})
 
+# This function calls the create_heart() function at each of the heart positions
 def spawn_hearts():
     heart_positions = [
         pygame.Vector2(750, 1250),
@@ -300,8 +383,6 @@ def spawn_hearts():
         create_heart(pos)
 
 spawn_hearts()
-
-# =============================================================================
 
 
 # NPC Dialogue
@@ -335,8 +416,6 @@ dialogue_text_color = (255, 255, 255) # White text colour
 dialogue_box_color = (50, 50, 50) # Dark black box colour
 dialogue_border_color = (200, 200, 200) # Grey for border
 speaker_color = (255, 215, 0)  # Gold for speaker
-
-# =============================================================================
 
 # Camera class for scrolling - Alex
 ## Deadzone means the position in the center where we keep the player
@@ -385,8 +464,6 @@ class Camera:
     def apply(self, pos):
         # Convert world pos to camera/screen pos
         return pygame.Vector2(pos.x - self.x, pos.y - self.y)
-    
-# =============================================================================
 
 # List of rectangles for collision - Riley
 collision_rects = [
@@ -432,12 +509,13 @@ def create_boundary_walls():
     
     return boundary_rects
 
-# function for making diagnal collision lines
+# function that makes a diagnal line by drawning multiple rectangles
 def diagnal_line(length, start_x, start_y, x_step, y_step):
     for i in range(length):
         rect = pygame.Rect(start_x + i * x_step, start_y + i * y_step, 2, 2)
         collision_rects.append(rect)
 
+# This function makes collisions for tree type 1
 def draw_tree_type1(x, y):
     diagnal_line(29, x, y, 1, 1.5)
     diagnal_line(31, x, y, -1, 1.5)
@@ -448,6 +526,7 @@ def draw_tree_type1(x, y):
     collision_rects.append(pygame.Rect(x + 29, y + 180, 2, 17))
     collision_rects.append(pygame.Rect(x, y + 197, 31, 2))
 
+# This cuntion makes collision lines for tree type 2
 def draw_tree_type2(x, y):
     diagnal_line(33, x, y, 1, 1.6)
     diagnal_line(37, x, y, -1, 1.5)
@@ -459,6 +538,7 @@ def draw_tree_type2(x, y):
     collision_rects.append(pygame.Rect(x + 20, y + 200, 2, 18))
     collision_rects.append(pygame.Rect(x - 20, y + 218, 40, 2))
 
+# Draw tree clollisions
 draw_tree_type1(400, 570)
 draw_tree_type1(127, 90)
 draw_tree_type1(460, 120)
@@ -477,6 +557,7 @@ draw_tree_type2(1830, 790)
 draw_tree_type2(1560, 153)
 draw_tree_type2(1710, 65)
 
+# Draw all the diagnal collsion lines
 diagnal_line(10, 777, 762, 1, -3.5)
 diagnal_line(17, 830, 762, -1, -2)
 diagnal_line(53, 670, 575, -4, 2)
@@ -495,8 +576,6 @@ diagnal_line(15, 755, 1193, -1, 1)
 # Create boundary walls and add them to collision_rects
 boundary_walls = create_boundary_walls()
 collision_rects.extend(boundary_walls)
-
-# =============================================================================
 
 # Create camera
 camera = Camera(
@@ -526,9 +605,6 @@ def get_render_surfaces():
 # Fullscreen toggle state
 fullscreen = False
 
-# =============================================================================
-
-
 # Function to wrap text for dialogue box
 def wrap_text(text, font, max_width):
     """Break text into lines that fit within max_width"""
@@ -544,7 +620,7 @@ def wrap_text(text, font, max_width):
             current_line.append(word) # Add the word to the line
         else:
             if current_line:
-                lines.append(' '.join(current_line)) # Adds the current_line to the lines list
+                lines.append(' '.join(current_line)) # Adds the currentLine to the lines list
                 current_line = [word] # Current word starts a new line
             else: 
                 lines.append(word) # If current line is empty, then add word to a new line
@@ -553,8 +629,6 @@ def wrap_text(text, font, max_width):
         lines.append(' '.join(current_line))
     
     return lines
-
-# =============================================================================
 
 # Function to draw dialogue box
 def draw_dialogue_box(surface, speaker, text):
@@ -592,9 +666,6 @@ def draw_dialogue_box(surface, speaker, text):
     indicator_y = box_y + dialogue_box_height - 30
     surface.blit(indicator_surface, (indicator_x, indicator_y))
 
-# =============================================================================
-
-# Draw the level selector
 def draw_level_selector():
     """Draw the level selection menu and return a list of level button rects and the back button rect"""
     screen.blit(get_menu_background(), (0, 0))
@@ -663,9 +734,6 @@ def draw_level_selector():
 # Settings menu variables
 sound_enabled = True  
 
-# =============================================================================
-
-# Function to draw settings menu
 def draw_settings_menu():
     """Draw the settings menu and return the sound toggle button rect, as well as the language toggle rect"""
     screen.blit(get_menu_background(), (0, 0)) 
@@ -744,8 +812,6 @@ def draw_settings_menu():
 
     return lang_button_rect, sound_button_rect, back_button_rect
 
-# =============================================================================
-
 # Main loop
 running = True
 play_button_rect, settings_button_rect = None, None
@@ -764,13 +830,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
-        # =============================================================================
-
         # Menu interactions
         if game_state == "menu":
             soundtrack_2.stop()
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: # If player left clicks
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button_rect and play_button_rect.collidepoint(mouse_pos):
                     game_state = "level_select"
@@ -787,9 +850,6 @@ while running:
                     game_state = "settings"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False  # Exit game from main menu
-
-        # =============================================================================
-
         # Settings interactions
         elif game_state == "settings":
             soundtrack_2.stop()
@@ -801,15 +861,13 @@ while running:
                     sound_enabled = not sound_enabled
                     # Set sound volume accordingly
                     trumpet.set_volume(0.3 if sound_enabled else 0.0)
+                    water_drip.set_volume(1.0 if sound_enabled else 0.0)
                     soundtrack_1.set_volume(0.5 if sound_enabled else 0.0)
                     soundtrack_2.set_volume(0.5 if sound_enabled else 0.0)
                 if settings_back_button_rect and settings_back_button_rect.collidepoint(mouse_pos):
                     game_state = "menu"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 game_state = "menu"
-
-        # =============================================================================
-
         # Level selector interactions
         elif game_state == "level_select":
             soundtrack_2.stop()
@@ -827,11 +885,19 @@ while running:
                             soundtrack_2.stop()
                             soundtrack_2.play(loops=0)
                         # Level 2 and Level 3 do nothing for now
+
+                        elif (language == "en" and level_name == "Level 2") or (language == "mi" and level_name == "Taumata 2"):
+                            in_level_2 = True
+                            game_state = "playing"
+                            interacted_with_npc = True
+                            level_2()
+
+
+
                 if back_button_rect and back_button_rect.collidepoint(mouse_pos):
                     game_state = "menu"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 game_state = "menu"  # Go back to main menu from level select
-        # =============================================================================
 
         # Game interactions (only when playing)
         elif game_state == "playing":
@@ -854,8 +920,6 @@ while running:
                 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
                 camera.width = int(WINDOW_WIDTH / ZOOM)
                 camera.height = int(WINDOW_HEIGHT / ZOOM)
-
-        # =============================================================================
 
             # Handle dialogue interaction
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
@@ -884,13 +948,14 @@ while running:
                                 
                 else:
                     # Original projectile code
-                    projectile_rect = projectile_image.get_rect(center = player_pos)
+                    projectile_rect = projectile_image.get_rect(center = player_pos) # Create projectile rectangle for collisions
                     mouse_pos = pygame.mouse.get_pos()
                     # Convert mouse position to world coordinates considering zoom
                     mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
                     mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
                     mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
                     
+                    # Get the direction the projectile needs to travel to go towards the player
                     direction = mouse_world_pos - player_pos
                     if direction.length() > 0:
                         direction = direction.normalize() * projectile_vel * dt
@@ -904,18 +969,18 @@ while running:
     elif game_state == "game_over":
         game_over()
 
+        # When the game over screen is displayed, wait 2 seconds and then return to menu
         if pygame.time.get_ticks() - game_over_time > 2000:
             game_state = "menu"
             game_over_time = 0
+            soundtrack_1.stop()
             # Reset objective when returning to menu after game over
             objective = 'Talk to NPC'
-
-    # =============================================================================
-    
+        
     elif game_state == "playing":
         keys = pygame.key.get_pressed()
 
-        # Move vertically
+        # Move vertically - If player is not talking to the NPC, Check if they are pressing W or S and move them accordingly.
         old_y = player_pos.y
         if not dialogue_active:
             if keys[pygame.K_w] or keys[pygame.K_UP]:
@@ -932,11 +997,16 @@ while running:
                     if len(enemies) == 0 and interacted_with_npc:
                         level_2()
 
+                elif rect == pygame.Rect(750, 290, 50, 2) and in_level_2:
+                    if not game_finished:
+                        game_finished = True
+                        end_time = pygame.time.get_ticks()
+
                 player_pos.y = old_y
                 player_rect.center = player_pos
                 break
 
-        # Move horizontally
+        # Move horizontally - If player is not talking to the NPC, Check if they are pressing A or D and move them accordingly.
         old_x = player_pos.x
         if not dialogue_active:
             if keys[pygame.K_a] or keys[pygame.K_LEFT]:
@@ -946,15 +1016,23 @@ while running:
 
         player_rect.center = player_pos  # Update rect position
         
-        # Simple collision detection for horizontal movement 
+        
+        # Simple collision detection for horizontal movement
         for rect in collision_rects:
             if player_rect.colliderect(rect):
-                if rect == pygame.Rect(755, 1160, 60, 2):
-                    level_2()
+                if rect == pygame.Rect(755, 1160, 60, 2) and not in_level_2:
+                    if len(enemies) == 0 and interacted_with_npc:
+                        level_2()
+
+                elif rect == pygame.Rect(750, 290, 50, 2) and in_level_2:
+                        if not game_finished:
+                            game_finished = True
+                            end_time = pygame.time.get_ticks()
 
                 player_pos.x = old_x
                 player_rect.center = player_pos
                 break
+
 
         # Close the game if the player presses escape - Riley
         if keys[pygame.K_ESCAPE]:
@@ -970,10 +1048,9 @@ while running:
 
         # Draw everything to render_surface (world coordinates)
         if in_level_2:
-            lvl2_background_img = pygame.image.load('lvl2_background.png')
-            lvl2_background_img = pygame.transform.scale(lvl2_background_img, (2000, 1300))
-            render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
-            pass
+            lvl2_background_img = pygame.image.load('lvl2_background.png').convert_alpha() # Load level 2 background image
+            lvl2_background_img = pygame.transform.scale(lvl2_background_img, (2000, 1300)) # Set background image size
+            render_surface.blit(lvl2_background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height)) # Draw the background image to the screen
 
         else:
             render_surface.blit(background_img, (0, 0), area=pygame.Rect(camera.x, camera.y, camera.width, camera.height))
@@ -996,10 +1073,17 @@ while running:
                              npc_screen_pos.y - 50)
                 render_surface.blit(prompt_text, prompt_pos)
 
+        # Create a copy of the portal rectangle, and then use camera.apply so it is fixed to the background
+        if in_level_2:
+            portal_rect = pygame.Rect(710, 230, 150, 150) # Rectangle for portal
+
+        else:
+            portal_rect = pygame.Rect(730, 1100, 150, 150) # Rectangle for portal
+
         portal_rect2 = portal_rect.copy()
         portal_rect2.topleft = camera.apply(pygame.Vector2(portal_rect2.topleft))
-        if not in_level_2:
-            render_surface.blit(portal_img, portal_rect2.topleft)
+
+        render_surface.blit(portal_img, portal_rect2.topleft) # Draw portal to the screen
 
         # Draw player at camera-relative position
         player_screen_pos = camera.apply(player_pos)
@@ -1010,52 +1094,24 @@ while running:
         screen.blit(render_surface, (0, 0))
         screen.blit(darkness_surface, (0, 0))
 
-        # =============================================================================
- 
-        if lighting_enabled:
-            # Fill the game with darkness
-            darkness_surface.fill(darkness_colour)
-
-            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
-            max_radius = 250  # The outermost edge of the light
-            step = 6  
-
-            for radius in range(max_radius, 0, -step): # Much fewer iterations now
-                # Calculate brightness for the current ring
-                light_intensity = 3
-                normalized_radius = radius / max_radius
-                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
-
-                # Ensure brightness stays within the valid range of 0 and 255
-                brightness = max(0, min(255, brightness))
-
-                # RBG of the light
-                light_color = (brightness, brightness, brightness)
-
-                # Draw the circle for this ring of light onto our light map.
-                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
-
-            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
-
         # Draw the collision rectangles in a way that they do move with the camera, but stay fixed to the map
         for rect in collision_rects:
             cam_rect = rect.copy()
             cam_rect.topleft = camera.apply(pygame.Vector2(rect.topleft))
             pygame.draw.rect(render_surface, 'red', cam_rect, -1)
 
-        # =============================================================================
 
-        to_remove = []
-        moving = []
-        deads = []
+        to_remove = [] # List of projectiles to be removed from the screen
+        deads = [] # List to store dead enemies
         for enemy in enemies:
-            enemy_screen_pos = camera.apply(pygame.Vector2(enemy["rect"].topleft))
+            enemy_screen_pos = camera.apply(pygame.Vector2(enemy["rect"].topleft)) # Draw each enemy in a way that it doesnt move with camer
             render_surface.blit(enemy_image, enemy_screen_pos)
 
-            enemy_pos = pygame.Vector2(enemy["rect"].center)
-            enemy_direction = player_pos - enemy_pos
+            enemy_pos = pygame.Vector2(enemy["rect"].center)# Get the enemies position
+            enemy_direction = player_pos - enemy_pos # Get the direction to the player
             distance = enemy_direction.length()
 
+            # If the player is within a 300 pixel radius of the enemy, the enemy will follow the player and shoot a projectile at them once a second
             if distance > 1 and distance < 300:
                 if distance > 1:
                     enemy_direction = enemy_direction.normalize() * enemy_vel
@@ -1084,17 +1140,8 @@ while running:
                         enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
                         enemy["last_shot"] = current_time
 
-                enemy_moving = True
-                for rect in collision_rects:
-                    if enemy["rect"].colliderect(rect):
-                        enemy_moving = False
 
-                if not enemy_moving:
-                    enemy_vel = 0
-
-                elif enemy_moving:
-                    enemy_vel = 100
-
+            # If the enemy is hit by a player projectile, remove the enemy and the projectile
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
                     deads.append(enemy)
@@ -1102,11 +1149,13 @@ while running:
                     if proj in projectiles:
                         projectiles.remove(proj)
 
+            # Remove all the enemies in the deads list from the enemies list 
             for dead in deads:
                 if dead in enemies:
                     enemies.remove(dead)
 
         for proj in enemy_projectiles:
+            # Move the enemy projectiles relative to the screen
             proj["rect"].centerx += proj["velocity"].x * dt
             proj["rect"].centery += proj["velocity"].y * dt
 
@@ -1114,6 +1163,7 @@ while running:
             cam_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
             render_surface.blit(enemy_proj_image, cam_rect.topleft)
 
+            # If the player is hit by an enemy projectile, remove a life and delete the projectile
             if player_rect.colliderect(proj["rect"]):
                 player_lives -= 1
                 
@@ -1129,6 +1179,7 @@ while running:
                 if proj in enemy_projectiles:
                     enemy_projectiles.remove(proj)
 
+        # Move the projectiles relative to the screen
         for proj in projectiles:
             proj["rect"].centerx += proj["velocity"].x * projectile_vel * dt
             proj["rect"].centery += proj["velocity"].y * projectile_vel * dt
@@ -1137,6 +1188,7 @@ while running:
             proj_rect.topleft = camera.apply(pygame.Vector2(proj["rect"].topleft))
             render_surface.blit(projectile_image, proj_rect.topleft)
 
+            # If the projectile hits a collisions rectangle, delete it
             for rect in collision_rects:
                 if rect.colliderect(proj["rect"]):
                     to_remove.append(proj)
@@ -1146,28 +1198,32 @@ while running:
                 if proj in projectiles:
                     projectiles.remove(proj)
 
-        # =============================================================================
-
+        # If the player lives are equal to zero, display the game over screen
         if player_lives == 0:
             game_state = "game_over"
             game_over_time = pygame.time.get_ticks()
 
+        # If the player has interacted with the npc, draw level 1
         if interacted_with_npc:
             if not level_1_spawned:
-                level_1_spawned = True
-                if selected_level == "Level 1":
-                    create_enemies()
-                if language == "en":
-                    objective = 'Objective: Kill all enemies'
-                elif language == "mi":
-                    objective = "whāinga poto: tinei katoa ngangare"
+                    level_1()
+                    level_1_spawned = True
+                    # Only set the 'kill all enemies' objective if we're not in level 2
+                    if not in_level_2:
+                        if language == "en":
+                            objective = 'Objective: Kill all enemies'
+                        elif language == "mi":
+                            objective = "whāinga poto: tinei katoa ngangare"
+
         hearts_to_remove = []
+        # If the player has less than 3 lives, draw hearts on the screen
         if player_lives < 3:
             for heart in hearts:
                 heart_rect = heart["rect"].copy()
                 heart_rect.topleft = camera.apply(pygame.Vector2(heart["rect"].topleft))
                 render_surface.blit(heart_img, heart_rect.topleft)
 
+                # If the player touches a heart, add it to the player lives and remove it from the screen
                 if player_rect.colliderect(heart["rect"]):
                     player_lives += 1
                     hearts_to_remove.append(heart)
@@ -1175,6 +1231,34 @@ while running:
             for heart in hearts_to_remove:
                 if heart in hearts:
                     hearts.remove(heart)
+
+            
+            # (Hint rendering moved later so it isn't affected by darkness)
+        
+        if lighting_enabled:
+            # Fill the game with darkness
+            darkness_surface.fill(darkness_colour)
+
+            light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
+            max_radius = 225  # The outermost edge of the light
+            step = 6  
+
+            for radius in range(max_radius, 0, -step): # Much fewer iterations now
+                # Calculate brightness for the current ring
+                light_intensity = 3
+                normalized_radius = radius / max_radius
+                brightness = int(light_intensity * 255 * (1 - normalized_radius**1.2))
+
+                # Ensure brightness stays within the valid range of 0 and 255
+                brightness = max(0, min(255, brightness))
+
+                # RBG of the light
+                light_color = (brightness, brightness, brightness)
+
+                # Draw the circle for this ring of light onto our light map.
+                pygame.draw.circle(darkness_surface, light_color, light_center, radius)
+
+            render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
 
 
             for radius in range(max_radius, 0, -step): # Much fewer iterations now
@@ -1207,8 +1291,6 @@ while running:
 
 
             render_surface.blit(darkness_surface, (0,0), special_flags=pygame.BLEND_MULT)
-
-        # =============================================================================
 
         # Scale render_surface to screen for zoom effect
         scaled_surface = pygame.transform.smoothscale(render_surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -1269,10 +1351,15 @@ while running:
             screen.blit(obj_bg, ((WINDOW_WIDTH - obj_bg.get_width()) // 2, obj_y))
             screen.blit(obj_text, ((WINDOW_WIDTH - obj_text.get_width()) // 2, obj_y + 5))
 
-    # Check if soundtrack_2 finished and repeat if needed — only while actively playing Level 1
-    if selected_level == "Level 1" and game_state == "playing":
+    # Check if soundtrack_1 finished and repeat if needed
+    if selected_level == "Level 1":
         if not pygame.mixer.get_busy():
             soundtrack_2.play(loops=0)
+
+    if game_finished:
+        end_screen()
+
+    print(pygame.mouse.get_pos())
 
     # Update display
     pygame.display.flip()
