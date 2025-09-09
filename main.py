@@ -35,6 +35,7 @@ selected_level = None  # Store the selected level
 
 # Timer variables
 game_start_time = 0
+end_time = 0
 timer_font = pygame.font.Font(None, 36)
 timer_border_location = 10
 timer_location = 15
@@ -166,7 +167,7 @@ def draw_menu():
 def end_screen():
     seconds = (end_time - game_start_time) // 1000
     
-    end_screen_font = pygame.font.Font(None, 80)
+    end_screen_font = pygame.font.Font(None, 40)
     end_screen_txt = end_screen_font.render(f'Congrats! You finished the game. Finish time: {seconds}. Press esc to exit.', True, 'white')
     end_screen_rect = end_screen_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
 
@@ -277,7 +278,8 @@ def create_enemy(pos):
 # This funtion clears the enemies list so that enemies are removed from the screen, and if the player has interacted with the npc, redraws them at their original positions.
 def reset_enemies():
     enemies.clear()
-    if interacted_with_npc:
+    # Only recreate enemies from the map positions when not in Level 2
+    if interacted_with_npc and not in_level_2:
         for pos in enemy_positions:
             create_enemy(pos)
 
@@ -294,10 +296,18 @@ in_level_2 = False # Variable to check if the player is in level 2
 
 # This function contains all the code for level 2 such as the new collisions and new player position.
 def level_2():
-    global in_level_2, collision_rects, enemies
+    global in_level_2, collision_rects, enemies, player_pos
     in_level_2 = True
-
+    # Move player to start position and ensure they are not stuck inside a collision rect
     player_pos = pygame.Vector2(1000, 1200)
+    player_rect.center = player_pos
+    # Nudge player out of any collision rects if overlapping
+    for rect in collision_rects:
+        if player_rect.colliderect(rect):
+            # move the player up until not colliding
+            while player_rect.colliderect(rect):
+                player_pos.y -= 5
+                player_rect.center = player_pos
 
     collision_rects = [
         pygame.Rect(805, 790, 390, 60),
@@ -1037,7 +1047,10 @@ while running:
                         level_2()
 
                 elif rect == pygame.Rect(750, 290, 50, 2) and in_level_2:
-                    game_finished = True
+                    if not game_finished:
+                        game_finished = True
+                        if end_time == 0:
+                            end_time = pygame.time.get_ticks()
 
                 player_pos.y = old_y
                 player_rect.center = player_pos
@@ -1062,7 +1075,10 @@ while running:
                         level_2()
 
                 elif rect == pygame.Rect(750, 290, 50, 2) and in_level_2:
-                    game_finished = True
+                    if not game_finished:
+                        game_finished = True
+                        if end_time == 0:
+                            end_time = pygame.time.get_ticks()
 
                 player_pos.x = old_x
                 player_rect.center = player_pos
@@ -1254,7 +1270,7 @@ while running:
             game_over_time = pygame.time.get_ticks()
 
         # If the player has interacted with the npc, draw level 1
-        if interacted_with_npc:
+        if interacted_with_npc and not in_level_2:
             if not level_1_spawned:
                 level_1()
                 level_1_spawned = True
@@ -1356,8 +1372,12 @@ while running:
                 draw_dialogue_box(screen, current_dialogue["speaker"], current_dialogue["text"])
         
         # Draw timer on top left (always visible during gameplay)
-        current_time = pygame.time.get_ticks()
-        elapsed_seconds = (current_time - game_start_time) // 1000
+        if game_finished:
+            # Freeze timer to the end_time captured when the level finished
+            elapsed_seconds = (end_time - game_start_time) // 1000
+        else:
+            current_time = pygame.time.get_ticks()
+            elapsed_seconds = (current_time - game_start_time) // 1000
         if language == "en":
             timer_text = timer_font.render(f"Timer: {elapsed_seconds}s", True, (255, 255, 255))
         elif language == "mi": 
@@ -1407,7 +1427,9 @@ while running:
             soundtrack_2.play(loops=0)
 
     if game_finished:
-        end_time = pygame.time.get_ticks()
+        # Defensive: ensure end_time is set at least once before showing end screen
+        if end_time == 0:
+            end_time = pygame.time.get_ticks()
         end_screen()
 
     # Update display
