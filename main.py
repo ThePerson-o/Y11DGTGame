@@ -251,12 +251,11 @@ enemy_image = pygame.transform.scale(enemy_image, (60, 60)) # set enemy image si
 enemy_vel = 100 # enemy speed
 # positions for enemies to be spawned
 enemy_positions = [
-    pygame.Vector2(950, 1000),
-    pygame.Vector2(1140, 700),
-    pygame.Vector2(700, 1100),
-    pygame.Vector2(800, 1100),
-    pygame.Vector2(700, 650),
-    pygame.Vector2(850, 650)
+    pygame.Vector2(745, 1255),
+    pygame.Vector2(100, 300),
+    pygame.Vector2(750, 650),
+    pygame.Vector2(1000, 200),
+    pygame.Vector2(1500, 600)
 ]
 # =============================================================================
 
@@ -996,19 +995,20 @@ while running:
                             interacted_with_npc = True
                                 
                 else:
-                    # Original projectile code
-                    projectile_rect = projectile_image.get_rect(center = player_pos) # Create projectile rectangle for collisions
-                    mouse_pos = pygame.mouse.get_pos()
-                    # Convert mouse position to world coordinates considering zoom
-                    mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
-                    mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
-                    mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
-                    
-                    # Get the direction the projectile needs to travel to go towards the player
-                    direction = mouse_world_pos - player_pos
-                    if direction.length() > 0:
-                        direction = direction.normalize() * projectile_vel * dt
-                        projectiles.append({"rect": projectile_rect, "velocity": direction})
+                    if not in_level_2:
+                        # Original projectile code
+                        projectile_rect = projectile_image.get_rect(center = player_pos) # Create projectile rectangle for collisions
+                        mouse_pos = pygame.mouse.get_pos()
+                        # Convert mouse position to world coordinates considering zoom
+                        mouse_world_x = (mouse_pos[0] / ZOOM) + camera.x
+                        mouse_world_y = (mouse_pos[1] / ZOOM) + camera.y
+                        mouse_world_pos = pygame.Vector2(mouse_world_x, mouse_world_y)
+                        
+                        # Get the direction the projectile needs to travel to go towards the player
+                        direction = mouse_world_pos - player_pos
+                        if direction.length() > 0:
+                            direction = direction.normalize() * projectile_vel * dt
+                            projectiles.append({"rect": projectile_rect, "velocity": direction})
 
     # Handle different game states
     if game_state == "menu":
@@ -1191,20 +1191,7 @@ while running:
                         enemy_projectiles.append({"rect": enemy_proj_rect, "velocity": enemy_proj_direction})
                         enemy["last_shot"] = current_time
 
-                # If the enemy is colliding with a collision rectangle, set enemy_moving to False
-                enemy_moving = True
-                for rect in collision_rects:
-                    if rect.colliderect(enemy["rect"]):
-                        enemy_moving = False
-
-                # If enemy_moving is set to False, set the enemy velocity to 0 so it can't move anymore
-                if not enemy_moving:
-                    enemy_vel = 0
-
-                # If the enemy_moving is True, set enemy velocity back to normal
-                elif enemy_moving:
-                    enemy_vel = 100
-
+            
             # If the enemy is hit by a player projectile, remove the enemy and the projectile
             for proj in projectiles:
                 if proj["rect"].colliderect(enemy["rect"]):
@@ -1304,7 +1291,7 @@ while running:
             darkness_surface.fill(darkness_colour)
 
             light_center = (int(player_screen_pos.x), int(player_screen_pos.y))
-            max_radius = 150  # The outermost edge of the light
+            max_radius = 225  # The outermost edge of the light
             step = 6  
 
             for radius in range(max_radius, 0, -step): # Much fewer iterations now
