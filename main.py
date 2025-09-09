@@ -713,7 +713,7 @@ def draw_level_selector():
 
     # 3 levels
     if language == "en":
-        levels = ["Level 1", "Level 2", "Level 3"]
+        levels = ["Level 1", "Level 2", "Level 3 (W.I.P)"]
     elif language == "mi":
         levels = ["Taumata 1", "Taumata 2", "Taumata 3"]
     else:
