@@ -38,6 +38,7 @@ selected_level = None  # Store the selected level
 
 # Timer variables
 game_start_time = 0
+end_time = 0
 timer_font = pygame.font.Font(None, 36)
 timer_border_location = 10
 timer_location = 15
@@ -164,7 +165,7 @@ def draw_menu():
 def end_screen():
     seconds = (end_time - game_start_time) // 1000
     
-    end_screen_font = pygame.font.Font(None, 80)
+    end_screen_font = pygame.font.Font(None, 40)
     end_screen_txt = end_screen_font.render(f'Congrats! You finished the game. Finish time: {seconds}. Press esc to exit.', True, 'white')
     end_screen_rect = end_screen_txt.get_rect(center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
 
@@ -281,8 +282,13 @@ in_level_2 = False # Variable to check if the player is in level 2
 
 # This function contains all the code for level 2 such as the new collisions and new player position.
 def level_2():
-    global in_level_2, collision_rects, enemy_positions, player_pos
+    global in_level_2, collision_rects, enemy_positions, player_pos, objective
     in_level_2 = True
+    # Set Level 2 objective (displayed as the yellow objective text)
+    if language == "en":
+        objective = 'Objective: Reach the End'
+    elif language == "mi":
+        objective = 'whāinga poto: Tae atu ki te mutunga'
 
     player_pos = pygame.Vector2(1000, 1200)
 
@@ -991,7 +997,9 @@ while running:
                         level_2()
 
                 elif rect == pygame.Rect(750, 290, 50, 2) and in_level_2:
-                    game_finished = True
+                    if not game_finished:
+                        game_finished = True
+                        end_time = pygame.time.get_ticks()
 
                 player_pos.y = old_y
                 player_rect.center = player_pos
@@ -1016,7 +1024,9 @@ while running:
                         level_2()
 
                 elif rect == pygame.Rect(750, 290, 50, 2) and in_level_2:
-                    game_finished = True
+                        if not game_finished:
+                            game_finished = True
+                            end_time = pygame.time.get_ticks()
 
                 player_pos.x = old_x
                 player_rect.center = player_pos
@@ -1208,12 +1218,14 @@ while running:
         # If the player has interacted with the npc, draw level 1
         if interacted_with_npc:
             if not level_1_spawned:
-                level_1()
-                level_1_spawned = True
-                if language == "en":
-                    objective = 'Objective: Kill all enemies'
-                elif language == "mi":
-                    objective = "whāinga poto: tinei katoa ngangare"
+                    level_1()
+                    level_1_spawned = True
+                    # Only set the 'kill all enemies' objective if we're not in level 2
+                    if not in_level_2:
+                        if language == "en":
+                            objective = 'Objective: Kill all enemies'
+                        elif language == "mi":
+                            objective = "whāinga poto: tinei katoa ngangare"
 
         hearts_to_remove = []
         # If the player has less than 3 lives, draw hearts on the screen
@@ -1357,7 +1369,6 @@ while running:
             soundtrack_2.play(loops=0)
 
     if game_finished:
-        end_time = pygame.time.get_ticks()
         end_screen()
 
     # Update display
